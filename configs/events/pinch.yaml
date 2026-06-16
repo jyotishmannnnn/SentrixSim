@@ -1,0 +1,14 @@
+name: pinch
+description: "Opposed thumb + index precision pinch (two-finger normal forces)."
+duration_s: 1.5
+fingers: [thumb, index]
+profile:
+  normal: [[0.0, 0.0], [0.2, 0.0], [0.45, 1.0], [1.0, 1.0]]
+  shear:  [[0.0, 0.0], [1.0, 0.0]]
+  shear_dir_deg: 0.0
+slip:
+  enabled: false
+phases:
+  - [0.0, idle]
+  - [0.2, reach]
+  - [0.45, grasp]

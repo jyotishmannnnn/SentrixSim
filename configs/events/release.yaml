@@ -1,0 +1,14 @@
+name: release
+description: "Start at a normal-force plateau, then ramp down to zero (let go)."
+duration_s: 1.0
+fingers: [index]
+profile:
+  normal: [[0.0, 1.0], [0.4, 1.0], [0.7, 0.0], [1.0, 0.0]]
+  shear:  [[0.0, 0.0], [1.0, 0.0]]
+  shear_dir_deg: 0.0
+slip:
+  enabled: false
+phases:
+  - [0.0, grasp]
+  - [0.4, release]
+  - [0.7, idle]

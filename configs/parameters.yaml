@@ -1,0 +1,385 @@
+# =============================================================================
+# SentrixSim v1 - MASTER PARAMETER REGISTRY
+# =============================================================================
+# Single source of truth for every simulator parameter.
+#
+# tier:        KNOWN | ESTIMATED | UNKNOWN
+#   KNOWN      - datasheet-authoritative OR explicitly frozen in a Sentrix doc
+#   ESTIMATED  - derived from a base value, standard physics, or a documented
+#                engineering choice (NOT a physical claim)
+#   UNKNOWN    - not specified anywhere; MUST be measured on hardware.
+#                value is null and enabled=false -> the sim refuses to use it
+#                silently (raises UnknownParameterError) unless run with
+#                --allow-placeholders, which stamps physics_fidelity=placeholder.
+#
+# confidence:  0.0 - 1.0   (see README confidence scale C1..C5)
+# origin:      provenance string (document + section, or datasheet)
+# enabled:     if false and tier==UNKNOWN, the parameter cannot be read silently
+# placeholder_range: [lo, hi]  used ONLY under --allow-placeholders
+# =============================================================================
+
+# ---------------------------------------------------------------------------
+# BMM350 magnetometer (datasheet-authoritative)
+# ---------------------------------------------------------------------------
+bmm.range_uT:
+  value: 2000.0
+  units: uT
+  tier: KNOWN
+  confidence: 0.97
+  origin: "BMM350 datasheet (full-scale +/-2000 uT)"
+  enabled: true
+bmm.noise_xy_nT:
+  value: 190.0
+  units: nT_rms
+  tier: KNOWN
+  confidence: 0.97
+  origin: "BMM350 datasheet (X/Y output noise)"
+  enabled: true
+bmm.noise_z_nT:
+  value: 450.0
+  units: nT_rms
+  tier: KNOWN
+  confidence: 0.97
+  origin: "BMM350 datasheet (Z output noise)"
+  enabled: true
+bmm.quant_step_uT:
+  value: 0.1
+  units: uT
+  tier: KNOWN
+  confidence: 0.95
+  origin: "BMM350 datasheet (resolution 0.1 uT, 24-bit raw container)"
+  enabled: true
+bmm.bits_raw:
+  value: 24
+  units: bit
+  tier: KNOWN
+  confidence: 0.85
+  origin: "BMM350 datasheet / Bosch forum (24-bit raw uncompensated)"
+  enabled: true
+bmm.odr_max_hz:
+  value: 400.0
+  units: Hz
+  tier: KNOWN
+  confidence: 0.97
+  origin: "BMM350 datasheet (max ODR normal mode)"
+  enabled: true
+bmm.temp_op_c:
+  value: [-40.0, 85.0]
+  units: degC
+  tier: KNOWN
+  confidence: 0.85
+  origin: "BMM350 datasheet (operating temperature range)"
+  enabled: true
+bmm.avg:
+  value: 1
+  units: count
+  tier: ESTIMATED
+  confidence: 0.6
+  origin: "BMM350 datasheet feature; per-AVG noise/ODR table to-confirm"
+  enabled: true
+# --- to-confirm datasheet sub-values: SHIPPED OFF (zero effect) ---
+bmm.tco_nT_per_C:
+  value: 0.0
+  units: nT_per_degC
+  tier: ESTIMATED
+  confidence: 0.4
+  origin: "BMM350 datasheet offset tempco - exact table not retrieved; OFF"
+  enabled: false
+bmm.tcs_pct_per_C:
+  value: 0.0
+  units: pct_per_degC
+  tier: ESTIMATED
+  confidence: 0.4
+  origin: "BMM350 datasheet sensitivity tempco - to-confirm; OFF"
+  enabled: false
+bmm.cross_axis_pct:
+  value: 0.0
+  units: pct
+  tier: ESTIMATED
+  confidence: 0.4
+  origin: "BMM350 datasheet cross-axis - to-confirm; OFF"
+  enabled: false
+bmm.nonlinearity_pct_fs:
+  value: 0.0
+  units: pct_fs
+  tier: ESTIMATED
+  confidence: 0.4
+  origin: "BMM350 datasheet nonlinearity - to-confirm; OFF"
+  enabled: false
+
+bmm.offset_spread_uT:
+  value: 0.3
+  units: uT
+  tier: ESTIMATED
+  confidence: 0.3
+  origin: "Per-unit/session zero-field offset spread - stand-in for UNKNOWN cal.bundle offset (~1-2x noise floor). Applied only for drift realizations."
+  enabled: true
+
+# ---------------------------------------------------------------------------
+# LIS2DTW12 accelerometer + temperature (datasheet-authoritative)
+# ---------------------------------------------------------------------------
+lis.fs_g:
+  value: 16.0
+  units: g
+  tier: KNOWN
+  confidence: 0.95
+  origin: "LIS2DTW12 datasheet (selectable +/-2/4/8/16 g; default 16 for slip transients)"
+  enabled: true
+lis.bits:
+  value: 14
+  units: bit
+  tier: KNOWN
+  confidence: 0.95
+  origin: "LIS2DTW12 datasheet (14-bit high-performance mode)"
+  enabled: true
+lis.sens_2g_mg_lsb:
+  value: 0.244
+  units: mg_per_lsb
+  tier: KNOWN
+  confidence: 0.95
+  origin: "LIS2DTW12/LIS2DW12 datasheet (sensitivity at +/-2g, 14-bit)"
+  enabled: true
+lis.noise_density_ug_rthz:
+  value: 90.0
+  units: ug_per_sqrtHz
+  tier: KNOWN
+  confidence: 0.95
+  origin: "LIS2DW12 datasheet (HP mode, +/-2g, 100 Hz)"
+  enabled: true
+lis.noise_floor_lp_mg:
+  value: 1.3
+  units: mg_rms
+  tier: KNOWN
+  confidence: 0.9
+  origin: "LIS2DTW12 datasheet (low-power RMS noise floor)"
+  enabled: true
+lis.odr_hz:
+  value: 1600.0
+  units: Hz
+  tier: KNOWN
+  confidence: 0.95
+  origin: "LIS2DTW12 datasheet (ODR 1.6..1600 Hz; default max for slip band)"
+  enabled: true
+lis.fifo_depth:
+  value: 32
+  units: samples
+  tier: KNOWN
+  confidence: 0.95
+  origin: "LIS2DTW12 datasheet (32-level FIFO)"
+  enabled: true
+lis.temp_acc_c:
+  value: 0.8
+  units: degC
+  tier: KNOWN
+  confidence: 0.9
+  origin: "LIS2DTW12 datasheet (temperature accuracy typ.)"
+  enabled: true
+lis.temp_bits:
+  value: 12
+  units: bit
+  tier: KNOWN
+  confidence: 0.9
+  origin: "LIS2DTW12 datasheet (temp resolution 8..12 bit)"
+  enabled: true
+lis.temp_odr_hz:
+  value: 50.0
+  units: Hz
+  tier: KNOWN
+  confidence: 0.9
+  origin: "LIS2DTW12 datasheet (temp ODR 1.6..50 Hz)"
+  enabled: true
+lis.temp_op_c:
+  value: [-40.0, 85.0]
+  units: degC
+  tier: KNOWN
+  confidence: 0.95
+  origin: "LIS2DTW12 datasheet (operating temperature range)"
+  enabled: true
+# --- to-confirm datasheet sub-values: SHIPPED OFF ---
+lis.offset_spread_mg:
+  value: 5.0
+  units: mg
+  tier: ESTIMATED
+  confidence: 0.3
+  origin: "Per-unit/session zero-g offset spread - stand-in for UNKNOWN offset/TCoff. Applied only for drift realizations."
+  enabled: true
+lis.tcoff_mg_per_C:
+  value: 0.0
+  units: mg_per_degC
+  tier: ESTIMATED
+  confidence: 0.4
+  origin: "LIS2DTW12 zero-g offset tempco - exact table not retrieved; OFF"
+  enabled: false
+lis.temp_sens_lsb_per_C:
+  value: null
+  units: lsb_per_degC
+  tier: UNKNOWN
+  confidence: 0.3
+  origin: "LIS2DTW12 temp LSB/degC not retrieved from exact table"
+  enabled: false
+  placeholder_range: [1.0, 256.0]
+lis.temp_quant_C:
+  value: 0.0625
+  units: degC
+  tier: ESTIMATED
+  confidence: 0.4
+  origin: "Presentation quant step pending exact LSB/degC; ~12-bit over a plausible span"
+  enabled: true
+
+# ---------------------------------------------------------------------------
+# Topology & geometry (Sentrix-authoritative)
+# ---------------------------------------------------------------------------
+geo.cluster_pitch_mm:
+  value: 3.5
+  units: mm
+  tier: ESTIMATED
+  confidence: 0.75
+  origin: "BUILD Part 6 / DERIV Table 9 (~3-4 mm cluster spacing)"
+  enabled: true
+geo.standoff_mm:
+  value: 0.6
+  units: mm
+  tier: KNOWN
+  confidence: 0.95
+  origin: "BUILD Correction 1 / Part 1 (magnet-to-die standoff <=0.6 mm)"
+  enabled: true
+geo.sensor_coords:
+  value: null
+  units: mm
+  tier: UNKNOWN
+  confidence: 0.3
+  origin: "Exact 2-D sensor coordinates per cluster not specified; synthesized from pitch+arrangement"
+  enabled: false
+geo.tip_radius_mm:
+  value: null
+  units: mm
+  tier: UNKNOWN
+  confidence: 0.3
+  origin: "Fingertip radius of curvature not specified in any document"
+  enabled: false
+  placeholder_range: [6.0, 10.0]
+geo.pad_area_mm2:
+  value: null
+  units: mm2
+  tier: UNKNOWN
+  confidence: 0.3
+  origin: "Contact-pad area per finger not specified"
+  enabled: false
+  placeholder_range: [80.0, 200.0]
+
+# ---------------------------------------------------------------------------
+# Magnetic skin  (identity KNOWN; magnetics UNKNOWN)
+# ---------------------------------------------------------------------------
+mag.layer_thickness_mm:
+  value: 1.25
+  units: mm
+  tier: KNOWN
+  confidence: 0.95
+  origin: "BUILD Part 1 (magnet layer thickness)"
+  enabled: true
+mag.Br_mT:
+  value: null
+  units: mT
+  tier: UNKNOWN
+  confidence: 0.3
+  origin: "Composite remanent magnetization not specified (22 wt% NdFeB MQFP-15-7)"
+  enabled: false
+  placeholder_range: [20.0, 120.0]
+mag.field_scale_uT:
+  value: 50.0
+  units: uT
+  tier: ESTIMATED
+  confidence: 0.3
+  origin: "PRESENTATION SCALE substituting for unknown (Br x geometry x deformation gain). Chosen so signals occupy a realistic fraction of the +/-2000 uT range for pipeline development. NOT a physical claim; replaced by hardware ΔB measurement."
+  enabled: true
+mag.pattern:
+  value: "uniform_through_thickness"
+  units: enum
+  tier: UNKNOWN
+  confidence: 0.3
+  origin: "BUILD Part 6 says 'defined through-thickness pattern' (qualitative only)"
+  enabled: true  # only the placeholder pattern name; magnitude gated by mag.Br_mT
+
+# ---------------------------------------------------------------------------
+# Contact mechanics (durometer KNOWN; moduli/friction UNKNOWN)
+# ---------------------------------------------------------------------------
+mech.poisson:
+  value: 0.49
+  units: ratio
+  tier: ESTIMATED
+  confidence: 0.6
+  origin: "Silicone near-incompressible norm; BUILD Part 3"
+  enabled: true
+mech.E_body_kPa:
+  value: null
+  units: kPa
+  tier: UNKNOWN
+  confidence: 0.3
+  origin: "Young's modulus not specified; Shore 10-15A hardness is NOT a modulus"
+  enabled: false
+  placeholder_range: [40.0, 120.0]
+mech.friction_mu:
+  value: null
+  units: ratio
+  tier: UNKNOWN
+  confidence: 0.3
+  origin: "Skin-object friction coefficient not specified in any document"
+  enabled: false
+  placeholder_range: [0.4, 1.2]
+
+# ---------------------------------------------------------------------------
+# Synchronization & environment
+# ---------------------------------------------------------------------------
+sync.master_rate_hz:
+  value: 1600.0
+  units: Hz
+  tier: KNOWN
+  confidence: 0.9
+  origin: "ENGINE 3.1 (master rate = highest native rate = LIS 1600 Hz)"
+  enabled: true
+sync.field_rate_hz:
+  value: 400.0
+  units: Hz
+  tier: KNOWN
+  confidence: 0.95
+  origin: "DERIV Phase 07/09 (field build target up to 400 Hz)"
+  enabled: true
+sync.intra_array_skew_us:
+  value: 50.0
+  units: us
+  tier: KNOWN
+  confidence: 0.8
+  origin: "DERIV Phase 07 (I3C broadcast intra-array skew target <50 us)"
+  enabled: true
+sync.timestamp_res_us:
+  value: 1.0
+  units: us
+  tier: KNOWN
+  confidence: 0.85
+  origin: "DERIV Phase 07 (per-sample us timestamp; hub clock)"
+  enabled: true
+env.B0_uT:
+  value: [25.0, 0.0, 40.0]
+  units: uT
+  tier: ESTIMATED
+  confidence: 0.7
+  origin: "Earth field vector (geophysical norm); rejected as common-mode per DERIV A6"
+  enabled: true
+env.temp_c:
+  value: 30.0
+  units: degC
+  tier: ESTIMATED
+  confidence: 0.6
+  origin: "Nominal on-hand operating temperature"
+  enabled: true
+
+# ---------------------------------------------------------------------------
+# Calibration bundle (UNKNOWN until 25-point 6-DoF grid is run)
+# ---------------------------------------------------------------------------
+cal.bundle:
+  value: null
+  units: matrix
+  tier: UNKNOWN
+  confidence: 0.3
+  origin: "Per-unit gain/offset/cross-axis from 25-pt 6-DoF grid (BUILD Part 8 step 11). Sim default = identity."
+  enabled: false

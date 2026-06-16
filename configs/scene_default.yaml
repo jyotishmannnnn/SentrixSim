@@ -1,0 +1,28 @@
+# Scene / run configuration. Overrides environment params and exposes the
+# relative-mode shaping constants used by Layers 1-2. These constants only
+# SHAPE the normalized response; they do NOT assert physical magnitudes
+# (absolute scale is gated by mag.Br_mT / mech.E_body_kPa, both UNKNOWN).
+
+environment:
+  temp_c: 30.0          # overrides env.temp_c if set
+  B0_uT: [25.0, 0.0, 40.0]
+
+# Layer 1 (contact -> deformation) relative-mode shaping. ESTIMATED.
+l1:
+  normal_compression_mm: 0.30   # max inward travel of the magnet at normal=1 (relative shaping)
+  shear_travel_mm: 0.50         # max lateral magnet travel at shear=1 (relative shaping)
+
+# Layer 2 (deformation -> field) dipole geometry. Distances in mm.
+l2:
+  dipole_moment_axis: [0.0, 0.0, -1.0]   # through-thickness magnetization direction (toward sensors)
+
+# Layer 4 dynamics
+l4:
+  accel_mode: high_performance   # high_performance (14-bit) | low_power (12-bit)
+
+# Decode (inverse) demo - light contact detector per ENGINE 3.2
+decode:
+  enabled: true
+  lowpass_fc_hz: 30.0
+  hysteresis_hi: 0.30   # fraction of per-episode field span
+  hysteresis_lo: 0.15

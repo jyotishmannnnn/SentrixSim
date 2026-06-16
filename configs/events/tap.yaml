@@ -1,0 +1,15 @@
+name: tap
+description: "Brief normal-force impulse on the index fingertip (fast rise/decay)."
+duration_s: 0.6
+fingers: [index]
+profile:
+  normal: [[0.0, 0.0], [0.45, 0.0], [0.50, 1.0], [0.56, 0.0], [1.0, 0.0]]
+  shear:  [[0.0, 0.0], [1.0, 0.0]]
+  shear_dir_deg: 0.0
+slip:
+  enabled: false
+phases:
+  - [0.0, idle]
+  - [0.45, reach]
+  - [0.50, grasp]
+  - [0.56, release]

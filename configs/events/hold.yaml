@@ -1,0 +1,15 @@
+name: hold
+description: "Ramp to a sustained normal-force plateau and hold (steady grasp)."
+duration_s: 2.0
+fingers: [index]
+profile:
+  normal: [[0.0, 0.0], [0.1, 0.0], [0.25, 1.0], [0.9, 1.0], [1.0, 1.0]]
+  shear:  [[0.0, 0.0], [1.0, 0.0]]
+  shear_dir_deg: 0.0
+slip:
+  enabled: false
+phases:
+  - [0.0, idle]
+  - [0.1, reach]
+  - [0.25, grasp]
+  - [0.9, transport]

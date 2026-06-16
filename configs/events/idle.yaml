@@ -1,0 +1,12 @@
+name: idle
+description: "No contact. Baseline field + gravity + sensor noise only."
+duration_s: 1.0
+fingers: []
+profile:
+  normal: [[0.0, 0.0], [1.0, 0.0]]
+  shear:  [[0.0, 0.0], [1.0, 0.0]]
+  shear_dir_deg: 0.0
+slip:
+  enabled: false
+phases:
+  - [0.0, idle]

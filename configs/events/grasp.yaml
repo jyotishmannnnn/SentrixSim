@@ -1,0 +1,15 @@
+name: grasp
+description: "Multi-finger enclosing power grasp (thumb + index + middle + ring)."
+duration_s: 2.0
+fingers: [thumb, index, middle, ring]
+profile:
+  normal: [[0.0, 0.0], [0.15, 0.0], [0.4, 1.0], [0.9, 1.0], [1.0, 1.0]]
+  shear:  [[0.0, 0.0], [0.4, 0.0], [0.6, 0.3], [1.0, 0.3]]
+  shear_dir_deg: 45.0
+slip:
+  enabled: false
+phases:
+  - [0.0, idle]
+  - [0.15, reach]
+  - [0.4, grasp]
+  - [0.9, transport]

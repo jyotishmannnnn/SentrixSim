@@ -1,0 +1,136 @@
+{
+  "codebase_version": "v3.0-sentrixsim-native",
+  "robot_type": "sentrix_mark2_glove",
+  "total_episodes": 1,
+  "total_frames": 2400,
+  "fps": 1600.0,
+  "chunks_size": 1,
+  "data_path": "data/chunk-{chunk_index:03d}/file-{file_index:03d}.parquet",
+  "features": {
+    "observation.tactile": {
+      "dtype": "float32",
+      "shape": [
+        63
+      ],
+      "names": null,
+      "note": "Bx,By,Bz per BMM350 (uT)"
+    },
+    "observation.dynamics": {
+      "dtype": "float32",
+      "shape": [
+        9
+      ],
+      "names": null,
+      "note": "ax,ay,az x thumb,index,middle (g)"
+    },
+    "observation.temp": {
+      "dtype": "float32",
+      "shape": [
+        3
+      ],
+      "names": [
+        "thumb",
+        "index",
+        "middle"
+      ]
+    },
+    "action": {
+      "dtype": "float32",
+      "shape": [
+        1
+      ],
+      "note": "no action - passive human-demo capture; placeholder zeros"
+    },
+    "timestamp": {
+      "dtype": "float32",
+      "shape": [
+        1
+      ]
+    },
+    "frame_index": {
+      "dtype": "int64",
+      "shape": [
+        1
+      ]
+    },
+    "episode_index": {
+      "dtype": "int64",
+      "shape": [
+        1
+      ]
+    },
+    "index": {
+      "dtype": "int64",
+      "shape": [
+        1
+      ]
+    },
+    "task_index": {
+      "dtype": "int64",
+      "shape": [
+        1
+      ]
+    },
+    "phase": {
+      "dtype": "int64",
+      "shape": [
+        1
+      ]
+    },
+    "next.reward": {
+      "dtype": "float32",
+      "shape": [
+        1
+      ]
+    },
+    "next.done": {
+      "dtype": "bool",
+      "shape": [
+        1
+      ]
+    }
+  },
+  "tasks": [
+    "slip"
+  ],
+  "sentrixsim_meta": {
+    "sim_version": "0.1.0",
+    "event": "slip",
+    "event_description": "Normal hold plus tangential ramp that EXCEEDS the slip threshold -> relative motion + a dynamics-band vibration burst. Slip->vibration coupling is UNKNOWN (no documented model); the burst is a flagged placeholder, OFF unless slip.vibration_enabled.",
+    "seed": 0,
+    "n_samples": 2400,
+    "master_rate_hz": 1600.0,
+    "field_rate_hz": 400.0,
+    "n_bmm350": 21,
+    "n_lis2dtw12": 3,
+    "layout": "layout_B",
+    "physics_fidelity": "relative",
+    "sync_quality": "simulated-target",
+    "allow_placeholders": false,
+    "param_counts": {
+      "KNOWN": 24,
+      "ESTIMATED": 12,
+      "UNKNOWN": 9
+    },
+    "phase_labels": [
+      "idle",
+      "reach",
+      "grasp",
+      "transport",
+      "align",
+      "insert",
+      "release",
+      "retreat"
+    ],
+    "fingers_in_contact": [
+      "index"
+    ],
+    "units": {
+      "B_read_uT": "uT",
+      "accel_read_g": "g",
+      "temp_read_c": "degC",
+      "t_master_us": "us",
+      "forces": "normalized (absolute N UNKNOWN)"
+    }
+  }
+}

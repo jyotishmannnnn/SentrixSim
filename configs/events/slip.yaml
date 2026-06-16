@@ -1,0 +1,20 @@
+name: slip
+description: "Normal hold plus tangential ramp that EXCEEDS the slip threshold -> relative motion + a dynamics-band vibration burst. Slip->vibration coupling is UNKNOWN (no documented model); the burst is a flagged placeholder, OFF unless slip.vibration_enabled."
+duration_s: 1.5
+fingers: [index]
+profile:
+  normal: [[0.0, 0.0], [0.15, 1.0], [1.0, 1.0]]
+  shear:  [[0.0, 0.0], [0.2, 0.0], [0.7, 1.0], [1.0, 1.0]]
+  shear_dir_deg: 90.0
+slip:
+  enabled: true
+  onset_frac: 0.6            # ground-truth slip onset (fraction of duration)
+  slip_velocity_norm: 1.0    # normalized; absolute velocity UNKNOWN
+  vibration_enabled: false   # placeholder vibration burst; OFF by default
+  vibration_freq_hz: 250.0   # placeholder spectral centre (>400 Hz band target)
+  vibration_amp_g: 0.05      # placeholder amplitude; ESTIMATED, not measured
+phases:
+  - [0.0, idle]
+  - [0.15, grasp]
+  - [0.2, align]
+  - [0.6, release]
