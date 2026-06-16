@@ -102,14 +102,26 @@ class FieldModel:
             peak = max(peak, float(np.linalg.norm(db, axis=-1).max()))
         return self.field_scale / max(peak, 1e-12)
 
-    def run(self, deform: Deformation, n: int) -> np.ndarray:
-        """Return B_true[T, n_bmm, 3] in uT."""
+    # finger adjacency for cross-finger magnetic coupling (hard mode, effect #7)
+    NEIGHBORS = {
+        "thumb": ["index"], "index": ["thumb", "middle"],
+        "middle": ["index", "ring"], "ring": ["middle", "pinky"],
+        "pinky": ["ring"],
+    }
+
+    def run(self, deform: Deformation, n: int, coupling_gain: float = 0.0) -> np.ndarray:
+        """Return B_true[T, n_bmm, 3] in uT.
+
+        coupling_gain > 0 adds a fraction of each neighbouring finger's
+        cluster-mean field perturbation to a finger's sensors (magnetic bleed,
+        ~1/r^3 over the finger pitch; ESTIMATED). 0 reproduces v0.1.
+        """
         nb = self.topo.n_bmm
         B = np.tile(self.B0, (n, nb, 1)).astype(float)
-        # Map global bmm index -> (finger, local index)
         finger_local: dict[str, list[int]] = {}
         for i, s in enumerate(self.topo.bmm_sites):
             finger_local.setdefault(s.finger, []).append(i)
+        db_mean: dict[str, np.ndarray] = {}  # finger -> (T,3) cluster-mean perturbation
         for f, idxs in finger_local.items():
             offs = self._clusters[f]
             if f not in deform.dz_mm:
@@ -118,4 +130,13 @@ class FieldModel:
             db = self._scale * self._cluster_field_t(offs, dz, dx, dy)   # (T,k,3)
             for k, gi in enumerate(idxs):
                 B[:, gi, :] += db[:, k, :]
+            db_mean[f] = db.mean(axis=1)                                 # (T,3)
+        if coupling_gain > 0.0:
+            for f, idxs in finger_local.items():
+                contrib = np.zeros((n, 3))
+                for nb_f in self.NEIGHBORS.get(f, []):
+                    if nb_f in db_mean:
+                        contrib += coupling_gain * db_mean[nb_f]
+                if contrib.any():
+                    B[:, idxs, :] += contrib[:, None, :]
         return B

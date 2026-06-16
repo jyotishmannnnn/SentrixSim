@@ -19,9 +19,12 @@ import yaml
 
 from . import __version__
 from .core_types import PHASES
+from .hardmode import build_hard_episode, load_hard_cfg, sample_session_cal
 from .layers.l7_export import mcap, parquet
 from .layers.l7_export.lerobot_dataset import LeRobotDatasetWriter
+from .params import ParameterRegistry
 from .pipeline import simulate
+from .topology import build_topology
 
 EVENTS = ["idle", "tap", "press", "hold", "shear", "slip", "release", "pinch", "grasp"]
 DURATION_MULTS = [0.75, 1.0, 1.25, 1.5, 2.0]
@@ -100,7 +103,7 @@ def _f(x):
 def build_dataset(config_dir, out_root, version="0.1", events=EVENTS,
                   duration_mults=DURATION_MULTS, n_noise=5, n_drift=4,
                   master_seed=20260601, formats=("parquet", "mcap", "lerobot"),
-                  mcap_stride=1):
+                  mcap_stride=1, hard_mode=False):
     config_dir = Path(config_dir)
     out = Path(out_root)
     out.mkdir(parents=True, exist_ok=True)
@@ -110,6 +113,21 @@ def build_dataset(config_dir, out_root, version="0.1", events=EVENTS,
     specs = plan_dataset(config_dir, events, duration_mults, n_noise, n_drift, master_seed)
     t0 = time.time()
 
+    # ---- hard-mode setup: sessions, calibration, hard-negative designation ----
+    hm = session_cals = hardneg_set = None
+    n_sessions = 0
+    if hard_mode:
+        hm = load_hard_cfg(config_dir)
+        reg0 = ParameterRegistry.load(config_dir / "parameters.yaml")
+        topo0 = build_topology(config_dir / "topology_layoutB.yaml", reg0)
+        nb = topo0.n_bmm
+        n_sessions = int(hm["session"]["n_sessions"])
+        session_cals = {sid: sample_session_cal(master_seed + 1000 + sid, nb, hm)
+                        for sid in range(n_sessions)}
+        idle_idx = [i for i, s in enumerate(specs) if s["event"] == "idle"]
+        n_hn = int(len(idle_idx) * hm["hard_negative"]["idle_fraction"])
+        hardneg_set = set(idle_idx[:n_hn])
+
     lr = LeRobotDatasetWriter(out / "lerobot", fps=1600.0) if "lerobot" in formats else None
 
     # accumulators
@@ -118,6 +136,7 @@ def build_dataset(config_dir, out_root, version="0.1", events=EVENTS,
     aacc = {ax: _Acc() for ax in ("ax", "ay", "az")}
     tacc = _Acc()
     sat_total = sat_count = 0
+    drop_total = drop_count = 0
     phase_hist = np.zeros(len(PHASES), int)
     per_event_phase = {ev: np.zeros(len(PHASES), int) for ev in events}
     contact_frac = {ev: [] for ev in events}
@@ -136,10 +155,21 @@ def build_dataset(config_dir, out_root, version="0.1", events=EVENTS,
         | {f"dyn.{f}.temp_degC" for f in ("thumb", "index", "middle")}
     )
 
+    n_hardneg_done = 0
     for i, spec in enumerate(specs):
         ev = spec["event"]
-        ep = simulate(ev, config_dir, seed=spec["noise_seed"],
-                      drift_seed=spec["drift_seed"], duration_s=spec["duration_s"])
+        if hard_mode:
+            is_hn = i in hardneg_set
+            n_hardneg_done += int(is_hn)
+            ep = build_hard_episode(
+                ev, config_dir, noise_seed=spec["noise_seed"],
+                drift_seed=spec["drift_seed"], style_seed=spec["noise_seed"] + 900000,
+                dropout_seed=spec["noise_seed"] + 1900000,
+                session_cal=session_cals[i % n_sessions],
+                duration_s=spec["duration_s"], is_hard_neg=is_hn)
+        else:
+            ep = simulate(ev, config_dir, seed=spec["noise_seed"],
+                          drift_seed=spec["drift_seed"], duration_s=spec["duration_s"])
         ep.name = spec["episode_id"]
 
         # ---- stats (in memory) ----
@@ -152,6 +182,9 @@ def build_dataset(config_dir, out_root, version="0.1", events=EVENTS,
         tacc.update(T)
         sat_total += ep.aligned["sat_flag"].size
         sat_count += int(ep.aligned["sat_flag"].sum())
+        if "dropout" in ep.aligned:
+            drop_total += ep.aligned["dropout"].size
+            drop_count += int(ep.aligned["dropout"].sum())
         ph = ep.aligned["phase_id"]
         hc = np.bincount(ph, minlength=len(PHASES))
         phase_hist += hc
@@ -169,8 +202,13 @@ def build_dataset(config_dir, out_root, version="0.1", events=EVENTS,
         # sync integrity
         tus = ep.t_master_us
         dt = np.diff(tus)
-        ok_mono = bool(np.all(dt > 0)) and int(tus[0]) == 0
-        ok_dt = bool(np.all(dt == dt[0])) if dt.size else True
+        ok_mono = bool(np.all(dt > 0))
+        if hard_mode:
+            # jitter-aware: monotonic + bounded dt (base 625 us +/- ~4x jitter max)
+            ok_dt = bool(dt.size == 0 or np.all((dt >= 50) & (dt <= 1700)))
+        else:
+            ok_mono = ok_mono and int(tus[0]) == 0
+            ok_dt = bool(np.all(dt == dt[0])) if dt.size else True
         bvalid_idx = np.flatnonzero(ep.aligned["bmm_valid"])
         ok_bvalid = bool(np.array_equal(bvalid_idx, np.arange(0, ep.n_samples, FIELD_RATIO)))
         if not (ok_mono and ok_dt and ok_bvalid):
@@ -202,6 +240,9 @@ def build_dataset(config_dir, out_root, version="0.1", events=EVENTS,
             "n_samples": ep.n_samples,
             "physics_fidelity": ep.meta["physics_fidelity"],
             "fingers_in_contact": ep.meta["fingers_in_contact"],
+            "session": (i % n_sessions) if hard_mode else None,
+            "is_hard_negative": bool(ep.meta.get("is_hard_negative", False)),
+            "partial_contact": bool(ep.meta.get("partial_contact", False)),
         })
 
     lr_root = lr.finalize(extra_meta={"dataset_version": version}) if lr is not None else None
@@ -241,7 +282,11 @@ def build_dataset(config_dir, out_root, version="0.1", events=EVENTS,
                                        and max(aacc[a].hi for a in aacc) <= 16),
             "temp_min": _f(tacc.lo), "temp_max": _f(tacc.hi),
             "saturated_fraction": round(sat_count / max(sat_total, 1), 8),
+            "dropout_fraction": round(drop_count / max(drop_total, 1), 8),
         },
+        "hard_mode": hard_mode,
+        "n_hard_negatives": n_hardneg_done,
+        "n_sessions": n_sessions,
         "timestamp_stats": {
             "expected_dt_us": 1e6 / 1600.0,
             "observed_dt_min_us": _f(dt_lo), "observed_dt_max_us": _f(dt_hi),
@@ -402,4 +447,4 @@ def _write_report(out, version, events, duration_mults, n_noise, n_drift,
       f"(~{gb/ max(stats['total_episodes'],1)*1000:.1f} MB/episode); budget "
       "linearly for larger runs and shard/partition by event+date.")
 
-    (out / "dataset_v0.1_report.md").write_text("\n".join(lines), encoding="utf-8")
+    (out / f"dataset_v{version}_report.md").write_text("\n".join(lines), encoding="utf-8")

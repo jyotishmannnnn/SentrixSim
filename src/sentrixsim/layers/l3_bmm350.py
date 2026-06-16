@@ -37,7 +37,11 @@ from ..params import ParameterRegistry
 from .l5_noise_drift import NoiseModel
 
 
-def run(B_true: np.ndarray, reg: ParameterRegistry, noise: NoiseModel) -> dict:
+def run(B_true: np.ndarray, reg: ParameterRegistry, noise: NoiseModel,
+        session_cal: dict | None = None, dropout_mask: np.ndarray | None = None) -> dict:
+    """session_cal (hard mode #9): {'gain':(nb,3),'offset':(nb,3)} non-identity
+    per-session calibration. dropout_mask (hard mode #5): (T,nb) bool, dropped
+    samples freeze to the last good value (zero-order hold; never NaN)."""
     T, nb, _ = B_true.shape
     rng_uT = float(reg.get("bmm.range_uT"))
     quant = float(reg.get("bmm.quant_step_uT"))
@@ -61,6 +65,10 @@ def run(B_true: np.ndarray, reg: ParameterRegistry, noise: NoiseModel) -> dict:
     spread = float(reg.get("bmm.offset_spread_uT"))
     m = m + noise.drift_offset((nb, 3), spread)[None, :, :]
 
+    # Per-session calibration (hard mode): non-identity gain + offset.
+    if session_cal is not None:
+        m = session_cal["gain"][None, :, :] * m + session_cal["offset"][None, :, :]
+
     # Saturation.
     sat = np.abs(m) >= rng_uT
     m = np.clip(m, -rng_uT, rng_uT)
@@ -77,4 +85,17 @@ def run(B_true: np.ndarray, reg: ParameterRegistry, noise: NoiseModel) -> dict:
     m = np.clip(m, -rng_uT, rng_uT)
     lsb = np.round(m / quant).astype(np.int64)
     read = lsb.astype(float) * quant
-    return {"B_read_uT": read, "B_lsb": lsb, "sat_flag": sat}
+
+    # Sensor dropouts (hard mode): vectorized zero-order hold of last good value.
+    dropout = np.zeros((T, nb), bool)
+    if dropout_mask is not None:
+        dropout = dropout_mask.copy()
+        dropout[0, :] = False  # seed sample is always valid
+        valid_idx = np.where(dropout, 0, np.arange(T)[:, None])
+        last = np.maximum.accumulate(valid_idx, axis=0)            # (T,nb)
+        cols = np.arange(nb)[None, :]
+        read = read[last, cols, :]
+        lsb = lsb[last, cols, :]
+        sat = sat[last, cols, :]
+
+    return {"B_read_uT": read, "B_lsb": lsb, "sat_flag": sat, "dropout": dropout}

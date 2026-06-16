@@ -1,0 +1,231 @@
+{
+  "episode_counts": {
+    "idle": 100,
+    "tap": 100,
+    "press": 100,
+    "hold": 100,
+    "shear": 100,
+    "slip": 100,
+    "release": 100,
+    "pinch": 100,
+    "grasp": 100
+  },
+  "total_episodes": 900,
+  "class_balance": {
+    "idle": 0.1111,
+    "tap": 0.1111,
+    "press": 0.1111,
+    "hold": 0.1111,
+    "shear": 0.1111,
+    "slip": 0.1111,
+    "release": 0.1111,
+    "pinch": 0.1111,
+    "grasp": 0.1111
+  },
+  "channel_stats": {
+    "B_uT": {
+      "bx": {
+        "n": 53726400,
+        "min": -1053.1000000000001,
+        "max": 729.4000000000001,
+        "mean": 26.527984134429232,
+        "std": 59.95837503440177
+      },
+      "by": {
+        "n": 53726400,
+        "min": -774.4000000000001,
+        "max": 184.60000000000002,
+        "mean": -1.4169088120551534,
+        "std": 28.29718769427412
+      },
+      "bz": {
+        "n": 53726400,
+        "min": -2000.0,
+        "max": 115.7,
+        "mean": 26.085613679680737,
+        "std": 135.34193883984523
+      }
+    },
+    "accel_g": {
+      "ax": {
+        "n": 7675200,
+        "min": -0.369140625,
+        "max": 0.3671875,
+        "mean": 6.737100499009798e-05,
+        "std": 0.043183866485984816
+      },
+      "ay": {
+        "n": 7675200,
+        "min": -0.3671875,
+        "max": 0.369140625,
+        "mean": -9.308211227394726e-05,
+        "std": 0.04316894529427043
+      },
+      "az": {
+        "n": 7675200,
+        "min": 0.6328125,
+        "max": 1.369140625,
+        "mean": 1.000027099253114,
+        "std": 0.043102759175664855
+      }
+    },
+    "temp_degC": {
+      "n": 7675200,
+      "min": 19.1875,
+      "max": 38.875,
+      "mean": 30.17637572962268,
+      "std": 4.438354214168722
+    }
+  },
+  "sensor_range": {
+    "B_within_pm2000uT": true,
+    "accel_within_pm16g": true,
+    "temp_min": 19.1875,
+    "temp_max": 38.875,
+    "saturated_fraction": 9.06e-06,
+    "dropout_fraction": 0.0094638
+  },
+  "hard_mode": true,
+  "n_hard_negatives": 50,
+  "n_sessions": 10,
+  "timestamp_stats": {
+    "expected_dt_us": 625.0,
+    "observed_dt_min_us": 154.0,
+    "observed_dt_max_us": 1107.0,
+    "duration_s_min": 0.45,
+    "duration_s_max": 4.0059
+  },
+  "label_distribution": {
+    "phase_hist_global": {
+      "idle": 1344472,
+      "reach": 196789,
+      "grasp": 573549,
+      "transport": 52492,
+      "align": 237037,
+      "insert": 0,
+      "release": 154061,
+      "retreat": 0
+    },
+    "phase_hist_per_event": {
+      "idle": {
+        "idle": 208000,
+        "reach": 0,
+        "grasp": 0,
+        "transport": 0,
+        "align": 0,
+        "insert": 0,
+        "release": 0,
+        "retreat": 0
+      },
+      "tap": {
+        "idle": 80721,
+        "reach": 4003,
+        "grasp": 4816,
+        "transport": 0,
+        "align": 0,
+        "insert": 0,
+        "release": 35260,
+        "retreat": 0
+      },
+      "press": {
+        "idle": 124425,
+        "reach": 39120,
+        "grasp": 86055,
+        "transport": 0,
+        "align": 0,
+        "insert": 0,
+        "release": 0,
+        "retreat": 0
+      },
+      "hold": {
+        "idle": 176556,
+        "reach": 39905,
+        "grasp": 172937,
+        "transport": 26602,
+        "align": 0,
+        "insert": 0,
+        "release": 0,
+        "retreat": 0
+      },
+      "shear": {
+        "idle": 144440,
+        "reach": 0,
+        "grasp": 9856,
+        "transport": 0,
+        "align": 157704,
+        "insert": 0,
+        "release": 0,
+        "retreat": 0
+      },
+      "slip": {
+        "idle": 143432,
+        "reach": 0,
+        "grasp": 9907,
+        "transport": 0,
+        "align": 79333,
+        "insert": 0,
+        "release": 79328,
+        "retreat": 0
+      },
+      "release": {
+        "idle": 115894,
+        "reach": 0,
+        "grasp": 52633,
+        "transport": 0,
+        "align": 0,
+        "insert": 0,
+        "release": 39473,
+        "retreat": 0
+      },
+      "pinch": {
+        "idle": 155071,
+        "reach": 49038,
+        "grasp": 107891,
+        "transport": 0,
+        "align": 0,
+        "insert": 0,
+        "release": 0,
+        "retreat": 0
+      },
+      "grasp": {
+        "idle": 195933,
+        "reach": 64723,
+        "grasp": 129454,
+        "transport": 25890,
+        "align": 0,
+        "insert": 0,
+        "release": 0,
+        "retreat": 0
+      }
+    },
+    "mean_contact_fraction": {
+      "idle": 0.0,
+      "tap": 0.0647,
+      "press": 0.4912,
+      "hold": 0.5679,
+      "shear": 0.6232,
+      "slip": 0.6279,
+      "release": 0.4302,
+      "pinch": 0.4919,
+      "grasp": 0.5179
+    },
+    "mean_slip_fraction": {
+      "idle": 0.0,
+      "tap": 0.0,
+      "press": 0.0566,
+      "hold": 0.0359,
+      "shear": 0.0,
+      "slip": 0.3769,
+      "release": 0.0,
+      "pinch": 0.0441,
+      "grasp": 0.0347
+    }
+  },
+  "storage": {
+    "parquet_bytes": 327751077,
+    "mcap_bytes": 238510802,
+    "lerobot_bytes": 258513778,
+    "total_bytes": 824775657
+  },
+  "elapsed_s": 158.9
+}

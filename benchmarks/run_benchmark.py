@@ -125,6 +125,9 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--parquet", default="./dataset_v0.1/parquet")
     ap.add_argument("--out", default="./benchmarks")
+    ap.add_argument("--version", default="0.1")
+    ap.add_argument("--compare", default=None,
+                    help="path to a prior benchmark_results.json to diff against")
     args = ap.parse_args()
 
     print("Loading dataset ...")
@@ -147,7 +150,7 @@ def main():
     run_tree_models(tr["ep_feat"], tr["ep_y"], te["ep_feat"], te["ep_y"],
                     ev_labels, binary=False, results=results, task="event")
     pred = train_cnn(tr["ep_raw"], tr["ep_y"], te["ep_raw"], te["ep_y"],
-                     n_classes=9, epochs=60, batch=32)
+                     n_classes=9, epochs=100, batch=32)
     results["event"]["CNN1D"] = evaluate(te["ep_y"], pred, ev_labels, binary=False)
 
     # ---- Task 2: contact (binary, per-window) ----
@@ -170,13 +173,16 @@ def main():
 
     out = Path(args.out)
     out.mkdir(parents=True, exist_ok=True)
-    payload = {"meta": meta, "results": results,
+    payload = {"version": args.version, "meta": meta, "results": results,
                "class_balance": {
                    "contact_test_pos_frac": float(te["w_contact"].mean()),
                    "slip_test_pos_frac": float(te["w_slip"].mean()),
                }}
+    compare = None
+    if args.compare and Path(args.compare).exists():
+        compare = json.loads(Path(args.compare).read_text(encoding="utf-8"))
     (out / "benchmark_results.json").write_text(json.dumps(payload, indent=2), encoding="utf-8")
-    _write_report(out, payload)
+    _write_report(out, payload, compare)
     print(f"\nWrote {out/'benchmark_report.md'}")
 
 
@@ -195,14 +201,30 @@ def _fmt_cm(cm, labels):
     return "```\n" + "\n".join(rows) + "\n```"
 
 
-def _write_report(out: Path, payload: dict):
+def _write_report(out: Path, payload: dict, compare: dict | None = None):
     m, r = payload["meta"], payload["results"]
+    ver = payload.get("version", "0.1")
     L = []
     A = L.append
-    A("# Sentrix Dataset v0.1 - Baseline Benchmark Report\n")
-    A("Three tasks x three model families, trained on `dataset_v0.1`. "
+    A(f"# Sentrix Dataset v{ver} - Baseline Benchmark Report\n")
+    A(f"Three tasks x three model families, trained on `dataset_v{ver}`. "
       "Split is **episode-level** (stratified by event), so no window leaks "
       "between train and test.\n")
+    if compare is not None:
+        cv = compare.get("version", "0.1")
+        A(f"## Comparison vs v{cv}\n")
+        A(f"| Task | Model | v{cv} | v{ver} | delta |")
+        A("|---|---|---|---|---|")
+        for task in ("event", "contact", "slip"):
+            key = "f1_macro"
+            for mdl in ("XGBoost", "RandomForest", "CNN1D"):
+                old = compare["results"].get(task, {}).get(mdl, {}).get(key)
+                new = r[task][mdl][key]
+                if old is None:
+                    continue
+                A(f"| {task} | {mdl} | {old:.3f} | {new:.3f} | {new-old:+.3f} |")
+        A(f"\n(metric = F1 macro; targets - event 0.80-0.95, slip 0.75-0.95, "
+          "contact 0.90-0.99)\n")
     A("## Setup\n")
     A(f"- Channels: {m['n_channels']} (63 BMM350 axes + 9 accel + 3 temp)")
     A(f"- Event task: per-episode, 9-class; {m['n_train_episodes']} train / "

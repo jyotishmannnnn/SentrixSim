@@ -1,0 +1,67 @@
+# =============================================================================
+# Hard Mode augmentation config (Dataset v0.2).
+# Every value here is an ESTIMATED augmentation parameter (a modelling choice to
+# inject realistic ambiguity), NOT a measured physical constant. confidence is
+# given per group; all are configurable. Hard mode stamps episodes
+# physics_fidelity = "relative+hardmode".
+# =============================================================================
+hard_mode:
+  enabled: true
+
+  # #1 Multi-stage: embed the core gesture in idle->reach->core->release->idle.
+  # confidence 0.4
+  multistage:
+    core_span_range: [0.45, 0.8]     # fraction of episode occupied by the core gesture
+    lead_idle_range: [0.05, 0.25]    # idle padding before reach
+
+  # #8 Variable execution styles. confidence 0.4
+  style:
+    amp_range: [0.55, 1.0]           # core normal-force amplitude scale
+    shear_amp_range: [0.6, 1.1]
+    time_warp_range: [0.85, 1.15]    # nonlinear speed of the core profile
+    tremor_amp: 0.05                 # plateau tremor (normalized force)
+    tremor_hz_range: [5.0, 12.0]
+    shear_dir_jitter_deg: 35.0
+
+  # #3 Micro-slip during holds. confidence 0.35
+  micro_slip:
+    events: [hold, grasp, pinch, press]
+    prob: 0.6                        # prob an eligible episode gets micro-slips
+    count_range: [1, 4]
+    amp_range: [0.03, 0.10]          # subtle shear excursion (normalized)
+    dur_ms_range: [25, 90]
+    label_as_slip: true
+
+  # #4 Partial contacts. confidence 0.4
+  partial_contact:
+    prob: 0.4
+    decentre_mm_range: [0.8, 2.2]    # lateral offset of contact within the cluster
+    amp_scale_range: [0.3, 0.65]     # reduced normal amplitude
+
+  # #5 Sensor dropouts. confidence 0.4
+  dropout:
+    prob_per_sensor: 0.03            # per-episode chance each BMM350 sensor drops
+    span_frac_range: [0.1, 0.5]
+
+  # #6 Timestamp jitter. confidence 0.5
+  jitter:
+    sigma_us: 70.0                   # within the DERIV <500 us sync target
+    max_us: 250.0
+
+  # #7 Cross-finger magnetic coupling. confidence 0.35
+  coupling:
+    neighbor_gain: 0.18
+
+  # #9 Per-session calibration drift. confidence 0.4
+  session:
+    n_sessions: 10
+    gain_spread: 0.06                # +/-6% per-session per-sensor gain
+    offset_spread_uT: 1.5
+
+  # #10 Hard negatives: non-contact hand motion + field disturbance (label idle).
+  # confidence 0.35
+  hard_negative:
+    idle_fraction: 0.5               # fraction of idle episodes that are motion/disturbance
+    motion_accel_g: 0.35             # low-freq hand motion on the tripod accel
+    motion_hz_range: [1.0, 4.0]
+    field_disturb_uT: 9.0            # slow common-mode field wander

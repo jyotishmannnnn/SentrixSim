@@ -1,0 +1,108 @@
+{
+  "codebase_version": "v3.0-sentrixsim-native",
+  "robot_type": "sentrix_mark2_glove",
+  "total_episodes": 900,
+  "total_frames": 2558400,
+  "total_chunks": 18,
+  "fps": 1600.0,
+  "chunks_size": 50,
+  "data_path": "data/chunk-{chunk_index:03d}/file-000.parquet",
+  "features": {
+    "observation.tactile": {
+      "dtype": "float32",
+      "shape": [
+        63
+      ],
+      "names": null,
+      "note": "Bx,By,Bz per BMM350 (uT)"
+    },
+    "observation.dynamics": {
+      "dtype": "float32",
+      "shape": [
+        9
+      ],
+      "names": null,
+      "note": "ax,ay,az x thumb,index,middle (g)"
+    },
+    "observation.temp": {
+      "dtype": "float32",
+      "shape": [
+        3
+      ],
+      "names": [
+        "thumb",
+        "index",
+        "middle"
+      ]
+    },
+    "action": {
+      "dtype": "float32",
+      "shape": [
+        1
+      ],
+      "note": "no action - passive human-demo capture; placeholder zeros"
+    },
+    "timestamp": {
+      "dtype": "float32",
+      "shape": [
+        1
+      ]
+    },
+    "frame_index": {
+      "dtype": "int64",
+      "shape": [
+        1
+      ]
+    },
+    "episode_index": {
+      "dtype": "int64",
+      "shape": [
+        1
+      ]
+    },
+    "index": {
+      "dtype": "int64",
+      "shape": [
+        1
+      ]
+    },
+    "task_index": {
+      "dtype": "int64",
+      "shape": [
+        1
+      ]
+    },
+    "phase": {
+      "dtype": "int64",
+      "shape": [
+        1
+      ]
+    },
+    "next.reward": {
+      "dtype": "float32",
+      "shape": [
+        1
+      ]
+    },
+    "next.done": {
+      "dtype": "bool",
+      "shape": [
+        1
+      ]
+    }
+  },
+  "tasks": [
+    "idle",
+    "tap",
+    "press",
+    "hold",
+    "shear",
+    "slip",
+    "release",
+    "pinch",
+    "grasp"
+  ],
+  "sentrixsim_meta": {
+    "dataset_version": "0.2"
+  }
+}

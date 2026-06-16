@@ -46,6 +46,8 @@ def write(ep: Episode, out_dir: str | Path) -> Path:
     cols["bmm_valid"] = ep.aligned["bmm_valid"]
     cols["temp_valid"] = ep.aligned["temp_valid"]
     cols["sat_any"] = ep.aligned["sat_flag"].any(axis=(1, 2))
+    if "dropout" in ep.aligned:
+        cols["dropout_any"] = ep.aligned["dropout"].any(axis=1)
     cols["phase_id"] = ep.aligned["phase_id"]
 
     for name, arr in ep.labels.items():

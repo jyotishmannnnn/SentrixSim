@@ -4,7 +4,7 @@ duration_s: 1.5
 fingers: [index]
 profile:
   normal: [[0.0, 0.0], [0.15, 1.0], [1.0, 1.0]]
-  shear:  [[0.0, 0.0], [0.2, 0.0], [0.7, 1.0], [1.0, 1.0]]
+  shear:  [[0.0, 0.0], [0.2, 0.0], [0.8, 0.7], [1.0, 0.7]]
   shear_dir_deg: 90.0
 slip:
   enabled: true

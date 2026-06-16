@@ -72,7 +72,7 @@ def cmd_build_dataset(args) -> int:
     res = build_dataset(
         cfg, args.out, version=args.version, n_noise=args.n_noise,
         n_drift=args.n_drift, master_seed=args.master_seed,
-        formats=formats, mcap_stride=args.mcap_stride,
+        formats=formats, mcap_stride=args.mcap_stride, hard_mode=args.hard_mode,
     )
     print(json.dumps({
         "out": res["out"],
@@ -133,6 +133,8 @@ def main(argv=None) -> int:
     bd.add_argument("--formats", default="parquet,mcap,lerobot")
     bd.add_argument("--mcap-stride", type=int, default=1,
                     help="write MCAP every Nth episode (1 = all)")
+    bd.add_argument("--hard-mode", action="store_true",
+                    help="enable v0.2 Hard Mode realism augmentation")
     bd.set_defaults(func=cmd_build_dataset)
 
     sl = sub.add_parser("list-events", help="list available gestures")

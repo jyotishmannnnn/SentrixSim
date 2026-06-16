@@ -43,7 +43,8 @@ def _hold(values: np.ndarray, valid: np.ndarray) -> np.ndarray:
     return out
 
 
-def run(n: int, bmm_out: dict, lis_out: dict, reg: ParameterRegistry) -> dict:
+def run(n: int, bmm_out: dict, lis_out: dict, reg: ParameterRegistry,
+        jitter_us: np.ndarray | None = None) -> dict:
     fs = float(reg.get("sync.master_rate_hz"))
     field_rate = float(reg.get("sync.field_rate_hz"))
     temp_odr = float(reg.get("lis.temp_odr_hz"))
@@ -51,6 +52,13 @@ def run(n: int, bmm_out: dict, lis_out: dict, reg: ParameterRegistry) -> dict:
 
     t_us = np.round(np.arange(n) / fs * 1e6 / ts_res) * ts_res
     t_us = t_us.astype(np.int64)
+    # Timestamp jitter (hard mode #6): perturb the grid, keep strictly monotonic.
+    if jitter_us is not None:
+        t_us = t_us + np.round(jitter_us).astype(np.int64)
+        # enforce strictly-increasing (min gap 1 us): cummax then +arange.
+        t_us = np.maximum.accumulate(t_us) + np.arange(n, dtype=np.int64)
+        if t_us[0] < 0:                       # keep timestamps non-negative
+            t_us = t_us - t_us[0]
 
     field_ratio = max(1, int(round(fs / field_rate)))
     temp_ratio = max(1, int(round(fs / temp_odr)))
@@ -61,12 +69,16 @@ def run(n: int, bmm_out: dict, lis_out: dict, reg: ParameterRegistry) -> dict:
     B_lsb = _hold(bmm_out["B_lsb"].astype(float), bmm_valid).astype(np.int64)
     sat = _hold(bmm_out["sat_flag"].astype(float), bmm_valid) > 0.5
     temp = _hold(lis_out["temp_read_c"], temp_valid)
+    drop_in = bmm_out.get("dropout")
+    dropout = (_hold(drop_in.astype(float), bmm_valid) > 0.5
+               if drop_in is not None else np.zeros((n, B.shape[1]), bool))
 
     return {
         "t_master_us": t_us,
         "B_read_uT": B,
         "B_lsb": B_lsb,
         "sat_flag": sat,
+        "dropout": dropout,
         "bmm_valid": bmm_valid,
         "accel_read_g": lis_out["accel_read_g"],
         "accel_lsb": lis_out["accel_lsb"],
