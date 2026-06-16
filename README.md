@@ -6,6 +6,10 @@ labels for data-pipeline, storage, labeling, and ML-prototyping work today, and
 is designed to graduate into a **calibrated digital twin** once Mark 2 hardware
 data lands — by editing config, not code.
 
+**Status:** v1 implemented and tested (19/19 tests passing). Datasets **v0.1** and
+**v0.2 Hard Mode** generated; baseline ML benchmarks run. Exports: Parquet, MCAP,
+LeRobot v3.
+
 ## Design contract
 
 Every parameter is classified and **no UNKNOWN parameter is silently invented**:
@@ -39,6 +43,16 @@ L7 export (parquet/mcap/lerobot)  layers/l7_export/
 Sensor topology: **Layout B** — 21× BMM350 (4/4/4/3/2 fingertips + 4 palm) +
 3× LIS2DTW12 (thumb/index/middle). See `configs/topology_layoutB.yaml`.
 
+## Repository
+
+```
+configs/          parameters.yaml (registry) · topology · scene_default · scene_hard · events/
+src/sentrixsim/   layers/ · params/ · events/ · dataset.py · hardmode.py · cli.py
+benchmarks/       run_benchmark.py · data.py
+docs/             ASSUMPTIONS.md · HARDMODE_failure_modes.md
+tests/
+```
+
 ## Install
 
 ```bash
@@ -53,6 +67,13 @@ sentrixsim list-events
 sentrixsim show-params --tier UNKNOWN
 sentrixsim simulate --event slip --out ./out --formats parquet,mcap,lerobot --seed 0
 sentrixsim simulate-all --out ./out
+
+# balanced datasets (900 episodes; Parquet + MCAP + LeRobot)
+sentrixsim build-dataset --out ./dataset_v0.1
+sentrixsim build-dataset --out ./dataset_v0.2 --version 0.2 --hard-mode
+
+# baseline ML benchmarks (XGBoost / RandomForest / 1D CNN)
+python benchmarks/run_benchmark.py --parquet ./dataset_v0.2/parquet --out ./benchmarks_v0.2
 ```
 
 Gestures: `idle tap press hold shear slip release pinch grasp`.
@@ -76,6 +97,46 @@ ship **OFF** (zero effect) until read from the exact datasheet tables.
   (`source: simulated_estimate`) side by side — the dataset is self-validating.
 - **Exports**: Parquet (medallion table), MCAP (self-describing log), LeRobot v3
   (native writer, no torch dep).
+
+## Datasets
+
+Both are 900 episodes (9 gestures × 100), balanced, deterministic seeds,
+~0.7–0.8 GB, all three export formats, validated (no missing channels, no NaNs,
+sync + export integrity). Reproducible via `build-dataset`.
+
+- **v0.1** (`dataset_v0.1/`) — clean baseline; relative/shape-only physics.
+- **v0.2 Hard Mode** (`dataset_v0.2/`) — realistic ambiguity: multi-stage
+  episodes, gesture overlap, micro-slip, partial contacts, sensor dropouts,
+  timestamp jitter, cross-finger coupling, variable styles, per-session
+  calibration drift, hard negatives. Knobs in `configs/scene_hard.yaml`; failure
+  modes in `docs/HARDMODE_failure_modes.md`.
+
+Each run emits `manifest.json`, `stats.json`, `validation.json`, and a report.
+
+## Benchmarks (baseline)
+
+Three tasks × {XGBoost, RandomForest, 1D CNN}, episode-level split. Best F1 (macro):
+
+| Task | v0.1 | v0.2 Hard | target band |
+|------|------|-----------|-------------|
+| Event (9-class) | 1.00 | 0.90 | 0.80–0.95 |
+| Contact | 1.00 | 0.99 | 0.90–0.99 |
+| Slip | 1.00 | 0.86 (CNN) | 0.75–0.95 |
+
+v0.1 was near-ceiling (too clean); v0.2 lands in the realistic bands with
+interpretable confusions. Full tables + confusion matrices:
+`benchmarks_v0.2/benchmark_report.md`.
+
+## Limitations & synthetic-to-real
+
+- **Relative / shape-only**: absolute force (N) and field (µT) magnitudes are not
+  physical (gated behind UNKNOWN moduli / friction / remanence). Only signal
+  shape, timing, noise, quantization and topology are spec-true — benchmark
+  scores measure separability of *simulated* structure, **not** real-hardware
+  performance.
+- No vision / RGB-D stream (the glove carries no camera; genlock is architectural).
+- Models trained on this data must be re-fit once calibrated hardware data
+  replaces the relative scales (path in `docs/ASSUMPTIONS.md`).
 
 ## Upgrading to a calibrated twin
 
