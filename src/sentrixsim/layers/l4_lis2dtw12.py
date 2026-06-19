@@ -35,7 +35,10 @@ TRIPOD = ["thumb", "index", "middle"]
 
 
 def run(accel_true_g: dict, temp_true_c: np.ndarray, reg: ParameterRegistry,
-        noise: NoiseModel, scene: dict) -> dict:
+        noise: NoiseModel, scene: dict, dyn_fingers: list[str] | None = None) -> dict:
+    # Dynamics sites from the topology descriptor; default to Layout-B tripod.
+    fingers = dyn_fingers if dyn_fingers is not None else TRIPOD
+    nsite = len(fingers)
     T = temp_true_c.shape[0]
     fs_g = float(reg.get("lis.fs_g"))
     bits = int(reg.get("lis.bits"))
@@ -54,11 +57,11 @@ def run(accel_true_g: dict, temp_true_c: np.ndarray, reg: ParameterRegistry,
     # Per-episode static zero-g offset (drift realization). ESTIMATED stand-in
     # for the UNKNOWN per-unit offset/TCoff spread; zero unless drift_seed set.
     off_spread = float(reg.get("lis.offset_spread_mg")) * 1e-3
-    drift_off = noise.drift_offset((3, 3), off_spread)
+    drift_off = noise.drift_offset((nsite, 3), off_spread)
 
-    accel_read = np.zeros((T, 3, 3))
-    accel_lsb = np.zeros((T, 3, 3), np.int64)
-    for k, f in enumerate(TRIPOD):
+    accel_read = np.zeros((T, nsite, 3))
+    accel_lsb = np.zeros((T, nsite, 3), np.int64)
+    for k, f in enumerate(fingers):
         a = accel_true_g.get(f, np.zeros((T, 3)))
         a = a + noise.gauss((T, 3), sigma_a) + drift_off[k][None, :]
         a = np.clip(a, -fs_g, fs_g)
@@ -69,8 +72,8 @@ def run(accel_true_g: dict, temp_true_c: np.ndarray, reg: ParameterRegistry,
     # Temperature channel.
     t_acc = float(reg.get("lis.temp_acc_c"))
     t_quant = float(reg.get("lis.temp_quant_C"))
-    temp_read = np.zeros((T, 3))
-    for k in range(3):
+    temp_read = np.zeros((T, nsite))
+    for k in range(nsite):
         tt = temp_true_c + noise.gauss((T,), t_acc)
         temp_read[:, k] = np.round(tt / t_quant) * t_quant
     return {"accel_read_g": accel_read, "accel_lsb": accel_lsb, "temp_read_c": temp_read}

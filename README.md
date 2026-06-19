@@ -4,11 +4,16 @@ Forward-model simulator for the **Sentrix Mark 2 visuotactile glove**, built
 *before physical hardware exists*. It produces raw sensor streams + ground-truth
 labels for data-pipeline, storage, labeling, and ML-prototyping work today, and
 is designed to graduate into a **calibrated digital twin** once Mark 2 hardware
-data lands — by editing config, not code.
+data lands — by editing config, not code. SentrixSim is no longer the only
+producer: **SentrixCapture** is the real-hardware producer and emits the *same*
+sensor_id-keyed raw artifact, against the same shared `sentrix_contracts`
+topology descriptor.
 
-**Status:** v1 implemented and tested (19/19 tests passing). Datasets **v0.1** and
-**v0.2 Hard Mode** generated; baseline ML benchmarks run. Exports: Parquet, MCAP,
-LeRobot v3.
+**Status:** v1 implemented and tested (23/23 tests passing). Topology is now
+**descriptor-driven** (Migration Phase 1): counts and geometry come from a shared
+`sentrix_contracts` topology descriptor, not hardcoded values. Datasets **v0.1**
+and **v0.2 Hard Mode** generated; baseline ML benchmarks run. Exports: Parquet,
+MCAP, LeRobot v3.
 
 ## Design contract
 
@@ -40,8 +45,15 @@ L6 synchronization            layers/l6_sync.py
 L7 export (parquet/mcap/lerobot)  layers/l7_export/
 ```
 
-Sensor topology: **Layout B** — 21× BMM350 (4/4/4/3/2 fingertips + 4 palm) +
-3× LIS2DTW12 (thumb/index/middle). See `configs/topology_layoutB.yaml`.
+Sensor topology is **descriptor-driven** (`topology.from_descriptor`): counts,
+geometry and sensor ids all come from a shared `sentrix_contracts` topology
+descriptor. The default is the bundled **`Mark2_v1`** — Layout B, 21× BMM350
+(4/4/4/3/2 fingertips + 4 palm) + 3× LIS2DW12 (thumb/index/middle). `Mark2_v1`
+is *generated* from Sim's `build_topology`, so the descriptor swap is
+value-identical (B_lsb bit-identical). A different descriptor (e.g. a 6-sensor
+layout) runs the whole pipeline + export with zero code change — the topology is
+count-agnostic. Pass `--descriptor <version|path>` to select one;
+`configs/topology_layoutB.yaml` remains the source for the bundled default.
 
 ## Repository
 
@@ -91,8 +103,14 @@ ship **OFF** (zero effect) until read from the exact datasheet tables.
 
 ## Outputs
 
-- **Raw streams**: `tactile.B_raw[21,3]` µT (un-baselined absolute field),
-  `dyn.accel[3,3]` g, `dyn.temp[3]` °C, µs timestamps, validity masks.
+- **Raw streams**: magnetic field `B_read_uT[T,n_mag,3]` µT (un-baselined
+  absolute field; Mark2_v1 → n_mag = 21), acceleration `[T,n_dyn,3]` g and
+  temperature `[T,n_dyn]` °C (Mark2_v1 → n_dyn = 3), µs timestamps, validity
+  masks. Export columns are **sensor_id-keyed** (canonical):
+  `mag.<sensor_id>.{bx,by,bz}_uT`, `dyn.<sensor_id>.{ax,ay,az}_g`,
+  `dyn.<sensor_id>.temp_c` (e.g. `mag.bmm_index_2.bx_uT`). Legacy Layout-B names
+  (`tactile.bNN.{...}` / `dyn.<finger>.{...}` / `temp_degC`) are a back-compat
+  shim emitted only with `--legacy-columns`.
 - **Labels**: ground-truth (`source: ground_truth`) **and** decoded estimates
   (`source: simulated_estimate`) side by side — the dataset is self-validating.
 - **Exports**: Parquet (medallion table), MCAP (self-describing log), LeRobot v3

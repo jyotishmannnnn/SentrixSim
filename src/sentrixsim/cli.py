@@ -24,11 +24,11 @@ def _default_config_dir() -> Path:
     return Path(__file__).resolve().parents[2] / "configs"
 
 
-def _export(ep, out_dir: Path, formats: list[str]) -> list[str]:
+def _export(ep, out_dir: Path, formats: list[str], legacy_columns: bool = False) -> list[str]:
     from .layers.l7_export import lerobot, mcap, parquet
     written = []
     if "parquet" in formats:
-        written.append(str(parquet.write(ep, out_dir)))
+        written.append(str(parquet.write(ep, out_dir, legacy_columns=legacy_columns)))
     if "mcap" in formats:
         written.append(str(mcap.write(ep, out_dir)))
     if "lerobot" in formats:
@@ -39,10 +39,11 @@ def _export(ep, out_dir: Path, formats: list[str]) -> list[str]:
 def cmd_simulate(args) -> int:
     cfg = Path(args.config_dir) if args.config_dir else _default_config_dir()
     ep = simulate(args.event, cfg, seed=args.seed,
-                  allow_placeholders=args.allow_placeholders)
+                  allow_placeholders=args.allow_placeholders,
+                  descriptor=args.descriptor)
     out = Path(args.out)
     formats = [f.strip() for f in args.formats.split(",") if f.strip()]
-    written = _export(ep, out, formats)
+    written = _export(ep, out, formats, legacy_columns=args.legacy_columns)
     print(json.dumps({
         "event": ep.name,
         "n_samples": ep.n_samples,
@@ -115,6 +116,10 @@ def main(argv=None) -> int:
     sp.add_argument("--formats", default="parquet,mcap,lerobot")
     sp.add_argument("--seed", type=int, default=0)
     sp.add_argument("--allow-placeholders", action="store_true")
+    sp.add_argument("--descriptor", default=None,
+                    help="topology descriptor: version name (e.g. Mark2_v1) or path. Default Mark2_v1.")
+    sp.add_argument("--legacy-columns", action="store_true",
+                    help="emit legacy Layout-B column names (tactile.bNN / dyn.<finger>)")
     sp.set_defaults(func=cmd_simulate)
 
     sa = sub.add_parser("simulate-all", help="simulate all 9 gestures")

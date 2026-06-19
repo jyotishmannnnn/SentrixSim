@@ -17,31 +17,42 @@ import pyarrow as pa
 import pyarrow.parquet as pq
 
 from ...core_types import Episode
-from .schema import flat_accel_columns, flat_tactile_columns
+from .schema import (TACTILE_AXES, accel_columns, flat_accel_columns,
+                     flat_tactile_columns, tactile_columns, temp_columns)
 
 
-def write(ep: Episode, out_dir: str | Path) -> Path:
+def write(ep: Episode, out_dir: str | Path, legacy_columns: bool = False) -> Path:
     out_dir = Path(out_dir)
     out_dir.mkdir(parents=True, exist_ok=True)
     n = ep.n_samples
     cols: dict[str, np.ndarray] = {"t_master_us": ep.t_master_us}
 
     B = ep.aligned["B_read_uT"]                 # (T, nb, 3)
-    nb = B.shape[1]
-    for i, name in enumerate(flat_tactile_columns(nb)):
-        axis = i % 3
-        bmm = i // 3
-        cols[name] = B[:, bmm, axis]
+    A = ep.aligned["accel_read_g"]              # (T, nl, 3)
+    temp = ep.aligned["temp_read_c"]            # (T, nl)
+    nb, nl = B.shape[1], A.shape[1]
 
-    A = ep.aligned["accel_read_g"]              # (T, 3, 3)
-    accel_cols = flat_accel_columns()
-    for j, name in enumerate(accel_cols):
-        site = j // 3
-        axis = j % 3
-        cols[name] = A[:, site, axis]
+    # Sensor ids come from the topology descriptor (carried in meta). Count-agnostic.
+    bmm_ids = ep.meta.get("bmm_sensor_ids")
+    lis_ids = ep.meta.get("lis_sensor_ids")
 
-    for k, f in enumerate(["thumb", "index", "middle"]):
-        cols[f"dyn.{f}.temp_degC"] = ep.aligned["temp_read_c"][:, k]
+    if legacy_columns or bmm_ids is None or lis_ids is None:
+        # Layout-B compatibility shim (ordinal tactile.bNN + dyn.<finger>).
+        fingers = [s.replace("lis_", "") for s in lis_ids] if lis_ids else None
+        for i, name in enumerate(flat_tactile_columns(nb)):
+            cols[name] = B[:, i // 3, i % 3]
+        for j, name in enumerate(flat_accel_columns(fingers)):
+            cols[name] = A[:, j // 3, j % 3]
+        for k, f in enumerate(fingers or ["thumb", "index", "middle"]):
+            cols[f"dyn.{f}.temp_degC"] = temp[:, k]
+    else:
+        # Canonical sensor_id-keyed columns.
+        for i, name in enumerate(tactile_columns(bmm_ids)):
+            cols[name] = B[:, i // 3, i % 3]
+        for j, name in enumerate(accel_columns(lis_ids)):
+            cols[name] = A[:, j // 3, j % 3]
+        for k, name in enumerate(temp_columns(lis_ids)):
+            cols[name] = temp[:, k]
 
     cols["bmm_valid"] = ep.aligned["bmm_valid"]
     cols["temp_valid"] = ep.aligned["temp_valid"]

@@ -8,11 +8,17 @@ is limited, and exactly which future hardware measurement replaces the estimate.
 - **Limits:** confidence is judgement, not learned.
 - **Upgrade:** edit the YAML entry when a value is measured (tier→KNOWN).
 
-## Topology (`topology.py`) — Layout B
-- **Assumes:** nominal cluster centres; within-cluster offsets from pitch +
-  arrangement; sensor frames aligned to hand frame.
+## Topology (`topology.py`) — descriptor-driven (default `Mark2_v1` = Layout B)
+- **Assumes:** counts, geometry and sensor ids come from a shared
+  `sentrix_contracts` topology descriptor (`from_descriptor`); they are **not**
+  hardcoded. The default bundled descriptor `Mark2_v1` is Layout B and is
+  generated from `build_topology`, so its centres/offsets carry the same nominal
+  assumptions (cluster centres; within-cluster offsets from pitch + arrangement;
+  sensor frames aligned to hand frame). The pipeline is count-agnostic — a
+  different descriptor runs end-to-end with no code change.
 - **Limits:** `geo.sensor_coords`, `geo.tip_radius_mm`, `geo.pad_area_mm2` UNKNOWN.
-- **Upgrade:** CT/optical metrology of a first article → set `geo.sensor_coords`.
+- **Upgrade:** CT/optical metrology of a first article → set `geo.sensor_coords`
+  (or supply a measured descriptor).
 
 ## L0 ground truth (`events/generator.py`)
 - **Assumes:** scripted gestures; forces NORMALIZED (no Newtons); slip onset
@@ -41,9 +47,10 @@ is limited, and exactly which future hardware measurement replaces the estimate.
 - **Upgrade:** load S, b (+cross-axis) from the per-unit calibration bundle;
   enable `bmm.tco`/`bmm.tcs` from a thermal-chamber sweep.
 
-## L4 LIS2DTW12 (`layers/l4_lis2dtw12.py`)
-- **Assumes:** sites ordered [thumb,index,middle]; HP 14-bit; temp modelled in
-  °C with a coarse quant (LSB/°C UNKNOWN); TCoff OFF.
+## L4 LIS2DW12 (`layers/l4_lis2dtw12.py`)
+- **Assumes:** dynamics sites and their order come from the descriptor (Mark2_v1
+  → [thumb,index,middle]); HP 14-bit; temp modelled in °C with a coarse quant
+  (LSB/°C UNKNOWN); TCoff OFF.
 - **Limits:** slip→vibration coupling unknown (injected only if event enables it).
 - **Upgrade:** calibrate temp LSB/°C + zero-g TCoff from a thermal sweep; fit a
   measured slip-vibration spectrum from an instrumented slip rig.
@@ -61,7 +68,9 @@ is limited, and exactly which future hardware measurement replaces the estimate.
 - **Upgrade:** measured genlock latency-probe residuals (DERIV R2); fit α,β.
 
 ## L7 export (`layers/l7_export/*`)
-- **Assumes:** native sparse-cluster schema; `[R,U,V]` only via explicit
+- **Assumes:** native sparse-cluster schema with **sensor_id-keyed** canonical
+  columns (`mag.<sensor_id>.*` / `dyn.<sensor_id>.*`); legacy Layout-B names are
+  a back-compat shim under `--legacy-columns`. `[R,U,V]` only via explicit
   `project_ruv`; LeRobot frames at master rate; no video (glove carries none).
 - **Limits:** labels inherit L1/L2 magnitude caveats.
 - **Upgrade:** attach real camera streams + PTP-aligned video once the capture

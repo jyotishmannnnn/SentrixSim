@@ -84,6 +84,33 @@ def _cluster_offsets(arrangement: str, pitch: float) -> np.ndarray:
     raise ValueError(f"Unknown arrangement: {arrangement}")
 
 
+def from_descriptor(desc) -> Topology:
+    """Build a Topology from a shared sentrix_contracts Descriptor.
+
+    This is the topology-driven path (Migration Phase 1): geometry, counts, and
+    sensor ids all come from the descriptor, not from hardcoded Layout-B values.
+    Sensor order is preserved from the descriptor (== simulator stream order when
+    the descriptor is generated from build_topology), so a faithful descriptor
+    reproduces byte-identical streams.
+    """
+    kind_of = {"BMM350": "bmm350", "LIS2DW12": "lis2dtw12"}
+    topo = Topology(name=desc.descriptor_version)
+    for sid, s in enumerate(desc.sensors.values()):
+        pos_m = s.position_m if s.position_m is not None else (0.0, 0.0, 0.0)
+        topo.sites.append(
+            SensorSite(
+                sid=sid,
+                kind=kind_of[s.sensor_type],
+                finger=s.finger or s.cluster_id or "palm",
+                role=(desc.clusters[s.cluster_id].geometry
+                      if s.cluster_id in desc.clusters else s.modality),
+                position_mm=np.asarray(pos_m, float) * 1000.0,
+                sensor_id=s.sensor_id,
+            )
+        )
+    return topo
+
+
 def build_topology(topo_path: str | Path, reg: ParameterRegistry) -> Topology:
     spec = yaml.safe_load(Path(topo_path).read_text(encoding="utf-8"))
     pitch = float(reg.get("geo.cluster_pitch_mm"))

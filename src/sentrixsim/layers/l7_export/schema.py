@@ -24,6 +24,22 @@ UNITS = {
 }
 
 
+# ---- canonical, topology-driven, sensor_id-keyed columns (Migration Phase 1) ----
+# Convention mirrors sentrix_contracts.columns: mag.<sensor_id>.{bx,by,bz}_uT,
+# dyn.<sensor_id>.{ax,ay,az}_g, dyn.<sensor_id>.temp_c. NO ordinal / finger names.
+def tactile_columns(bmm_ids: list[str]) -> list[str]:
+    return [f"mag.{sid}.{ax}_uT" for sid in bmm_ids for ax in TACTILE_AXES]
+
+
+def accel_columns(lis_ids: list[str]) -> list[str]:
+    return [f"dyn.{sid}.{ax}_g" for sid in lis_ids for ax in ACCEL_AXES]
+
+
+def temp_columns(lis_ids: list[str]) -> list[str]:
+    return [f"dyn.{sid}.temp_c" for sid in lis_ids]
+
+
+# ---- legacy Layout-B column names (compatibility shim; --legacy-columns) ----
 def flat_tactile_columns(n_bmm: int) -> list[str]:
     cols = []
     for i in range(n_bmm):
@@ -32,9 +48,9 @@ def flat_tactile_columns(n_bmm: int) -> list[str]:
     return cols
 
 
-def flat_accel_columns() -> list[str]:
+def flat_accel_columns(fingers: list[str] | None = None) -> list[str]:
     cols = []
-    for f in TRIPOD:
+    for f in (fingers or TRIPOD):
         for ax in ACCEL_AXES:
             cols.append(f"dyn.{f}.{ax}_g")
     return cols

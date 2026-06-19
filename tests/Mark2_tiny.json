@@ -1,0 +1,23 @@
+{
+  "schema_version": "1.0",
+  "descriptor_version": "Mark2_tiny",
+  "descriptor_hash": "sha256:0000000000000000000000000000000000000000000000000000000000000000",
+  "device_class": "glove",
+  "body": { "kind": "human_hand_right", "notes": "synthetic 2-finger revision; proves topology-drive with no code change" },
+  "frame": { "origin": "wrist_hub", "axes": { "x": "ulnar_to_radial", "y": "proximal_to_distal", "z": "dorsal_to_palmar" }, "units": "m" },
+  "modalities": ["magnetic", "dynamics"],
+  "neighborhood_graph": { "neighbor_radius_m": 0.006 },
+  "clusters": [
+    { "id": "thumb", "members": ["bmm_thumb_0", "bmm_thumb_1", "bmm_thumb_2", "bmm_thumb_3"], "geometry": "quad" },
+    { "id": "index", "members": ["bmm_index_0", "bmm_index_1"], "geometry": "pair" }
+  ],
+  "sensors": [
+    { "sensor_id": "bmm_thumb_0", "sensor_type": "BMM350", "modality": "magnetic", "channels": ["bx","by","bz"], "units": {"b":"uT"}, "bus": {"id":0,"kind":"i3c","address":"dynamic"}, "body_region": "fingertip", "finger": "thumb", "segment": "distal", "position_m": [-0.03, 0.04175, 0.008], "cluster_id": "thumb", "neighbors": ["bmm_thumb_1","bmm_thumb_2","bmm_thumb_3"], "calibration_ref": "bmm_thumb_0" },
+    { "sensor_id": "bmm_thumb_1", "sensor_type": "BMM350", "modality": "magnetic", "channels": ["bx","by","bz"], "units": {"b":"uT"}, "bus": {"id":0,"kind":"i3c","address":"dynamic"}, "body_region": "fingertip", "finger": "thumb", "segment": "distal", "position_m": [-0.02825, 0.04, 0.008], "cluster_id": "thumb", "neighbors": ["bmm_thumb_0","bmm_thumb_2","bmm_thumb_3"], "calibration_ref": "bmm_thumb_1" },
+    { "sensor_id": "bmm_thumb_2", "sensor_type": "BMM350", "modality": "magnetic", "channels": ["bx","by","bz"], "units": {"b":"uT"}, "bus": {"id":0,"kind":"i3c","address":"dynamic"}, "body_region": "fingertip", "finger": "thumb", "segment": "distal", "position_m": [-0.03, 0.03825, 0.008], "cluster_id": "thumb", "neighbors": ["bmm_thumb_0","bmm_thumb_1","bmm_thumb_3"], "calibration_ref": "bmm_thumb_2" },
+    { "sensor_id": "bmm_thumb_3", "sensor_type": "BMM350", "modality": "magnetic", "channels": ["bx","by","bz"], "units": {"b":"uT"}, "bus": {"id":0,"kind":"i3c","address":"dynamic"}, "body_region": "fingertip", "finger": "thumb", "segment": "distal", "position_m": [-0.03175, 0.04, 0.008], "cluster_id": "thumb", "neighbors": ["bmm_thumb_0","bmm_thumb_1","bmm_thumb_2"], "calibration_ref": "bmm_thumb_3" },
+    { "sensor_id": "lis_thumb", "sensor_type": "LIS2DW12", "modality": "dynamics", "channels": ["ax","ay","az","temp"], "units": {"a":"g","temp":"degC"}, "bus": {"id":0,"kind":"i3c","address":"dynamic"}, "body_region": "fingertip", "finger": "thumb", "segment": "distal", "position_m": [-0.03, 0.04, 0.008], "cluster_id": "thumb", "neighbors": [], "calibration_ref": "lis_thumb" },
+    { "sensor_id": "bmm_index_0", "sensor_type": "BMM350", "modality": "magnetic", "channels": ["bx","by","bz"], "units": {"b":"uT"}, "bus": {"id":1,"kind":"i3c","address":"dynamic"}, "body_region": "fingertip", "finger": "index", "segment": "distal", "position_m": [-0.01, 0.09675, 0.008], "cluster_id": "index", "neighbors": ["bmm_index_1"], "calibration_ref": "bmm_index_0" },
+    { "sensor_id": "bmm_index_1", "sensor_type": "BMM350", "modality": "magnetic", "channels": ["bx","by","bz"], "units": {"b":"uT"}, "bus": {"id":1,"kind":"i3c","address":"dynamic"}, "body_region": "fingertip", "finger": "index", "segment": "distal", "position_m": [-0.01, 0.09325, 0.008], "cluster_id": "index", "neighbors": ["bmm_index_0"], "calibration_ref": "bmm_index_1" }
+  ]
+}

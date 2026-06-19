@@ -41,8 +41,13 @@ def load_event(event_path: str | Path) -> dict:
 
 
 def generate_ground_truth(
-    event: dict, reg: ParameterRegistry, gravity_axis: int = 2
+    event: dict, reg: ParameterRegistry, gravity_axis: int = 2,
+    dyn_fingers: list[str] | None = None,
 ) -> GroundTruth:
+    # Dynamics (LIS) fingers come from the topology descriptor; default to the
+    # Layout-B tripod for backward compatibility.
+    if dyn_fingers is None:
+        dyn_fingers = ["thumb", "index", "middle"]
     fs = float(reg.get("sync.master_rate_hz"))
     dur = float(event["duration_s"])
     n = max(2, int(round(dur * fs)))
@@ -80,7 +85,7 @@ def generate_ground_truth(
     grav = np.zeros(3)
     grav[gravity_axis] = 1.0
     vib_on = bool(slip_cfg.get("vibration_enabled", False))
-    for f in ("thumb", "index", "middle"):
+    for f in dyn_fingers:
         a = np.tile(grav, (n, 1))
         if f in fingers and slip_cfg.get("enabled") and vib_on:
             fv = float(slip_cfg.get("vibration_freq_hz", 250.0))
