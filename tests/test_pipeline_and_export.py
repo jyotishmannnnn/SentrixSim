@@ -133,9 +133,13 @@ def test_second_descriptor_end_to_end(config_dir, tmp_path):
     assert "mag.bmm_index_1.bz_uT" in t.column_names
 
 
-def test_legacy_columns_shim(config_dir, tmp_path):
+def test_legacy_column_shim_retired(config_dir, tmp_path):
+    """SIM-3: the legacy Layout-B shim is gone — no `legacy_columns` kwarg, and
+    output carries only canonical sensor_id-keyed columns."""
+    import inspect
+    assert "legacy_columns" not in inspect.signature(parquet.write).parameters
     ep = simulate("tap", config_dir, seed=0)
-    path = parquet.write(ep, tmp_path / "legacy", legacy_columns=True)
-    t = pq.read_table(path)
-    assert any(c.startswith("tactile.b00") for c in t.column_names)
-    assert "dyn.thumb.ax_g" in t.column_names
+    t = pq.read_table(parquet.write(ep, tmp_path / "canon"))
+    assert not any(c.startswith("tactile.b") for c in t.column_names)
+    assert not any(c.endswith(".temp_degC") for c in t.column_names)
+    assert "mag.bmm_thumb_0.bx_uT" in t.column_names

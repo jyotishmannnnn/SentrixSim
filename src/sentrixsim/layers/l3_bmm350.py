@@ -38,10 +38,14 @@ from .l5_noise_drift import NoiseModel
 
 
 def run(B_true: np.ndarray, reg: ParameterRegistry, noise: NoiseModel,
-        session_cal: dict | None = None, dropout_mask: np.ndarray | None = None) -> dict:
+        session_cal: dict | None = None, dropout_mask: np.ndarray | None = None,
+        local_frames: np.ndarray | None = None) -> dict:
     """session_cal (hard mode #9): {'gain':(nb,3),'offset':(nb,3)} non-identity
     per-session calibration. dropout_mask (hard mode #5): (T,nb) bool, dropped
-    samples freeze to the last good value (zero-order hold; never NaN)."""
+    samples freeze to the last good value (zero-order hold; never NaN).
+    local_frames (nb,3,3): per-sensor sensor->device rotations from the topology;
+    the field is read in each sensor's own axes (the R in m = S R B_true). None or
+    identity (the flat Mark 2 board) is a no-op."""
     T, nb, _ = B_true.shape
     rng_uT = float(reg.get("bmm.range_uT"))
     quant = float(reg.get("bmm.quant_step_uT"))
@@ -53,6 +57,13 @@ def run(B_true: np.ndarray, reg: ParameterRegistry, noise: NoiseModel,
     if reg.allow_placeholders:
         _ = reg.get("cal.bundle")
     m = B_true.copy()
+
+    # Orientation (the R in m = S R B_true): rotate the device-frame field into
+    # each sensor's own axes. R = local_frame (sensor->device), so the read in
+    # sensor axes is R^T B_device. Identity for the flat Mark 2 board -> no-op;
+    # non-identity (curved Mark 3 tips) flows through unchanged.
+    if local_frames is not None:
+        m = np.einsum("sik,tsi->tsk", local_frames, m)
 
     # Optional temperature drift (OFF by default -> coefficients are 0).
     tco = float(reg.get("bmm.tco_nT_per_C")) * 1e-3 if reg.param("bmm.tco_nT_per_C").enabled else 0.0

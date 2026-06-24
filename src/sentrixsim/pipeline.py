@@ -78,7 +78,7 @@ def simulate(
     field = FieldModel(topo, reg, scene)
     B_true = field.run(deform, n)
     noise = NoiseModel(seed, drift_seed=drift_seed)
-    bmm_out = l3_bmm350.run(B_true, reg, noise)
+    bmm_out = l3_bmm350.run(B_true, reg, noise, local_frames=topo.bmm_local_frames)
     lis_out = l4_lis2dtw12.run(gt.accel_true_g, gt.temp_true_c, reg, noise, scene,
                                dyn_fingers=dyn_fingers)
     aligned = l6_sync.run(n, bmm_out, lis_out, reg)

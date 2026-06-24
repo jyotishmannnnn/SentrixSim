@@ -1,7 +1,10 @@
 # =============================================================================
 # Sentrix Mark 2 - Layout B sensor topology
-# Origin: DERIV Table 9 (build-ready detail) + BUILD Part 5/6
+# Origin: DERIV Table 9 (build-ready detail) + BUILD Part 5/6, reconciled to the
+# frozen Rev-B as-built distribution (sentrix_mark2_revb_change_package.md SEC D).
 # 21x BMM350 + 3x LIS2DTW12.  Palmar sensing faces; dorsal routing.
+# Per-finger BMM counts MATCH the populated board: thumb 4, index 5, middle 4,
+# ring 3, pinky 1, palm 4 (= 21).  Flat rigid validation board -> identity frames.
 #
 # Positions are in the HAND frame (millimetres), x=ulnar->radial,
 # y=proximal->distal, z=dorsal->palmar(+).  Fingertip cluster centres are
@@ -17,8 +20,8 @@ clusters:
     dynamics: true             # 1x LIS2DTW12
   - finger: index
     center_mm: [-10.0, 95.0, 8.0]
-    arrangement: quad
-    n_bmm350: 4
+    arrangement: quincunx      # quad + centre -> 5 sensors (board: U24,U30-U33)
+    n_bmm350: 5
     dynamics: true
   - finger: middle
     center_mm: [2.0, 100.0, 8.0]
@@ -32,8 +35,8 @@ clusters:
     dynamics: false
   - finger: pinky
     center_mm: [26.0, 78.0, 8.0]
-    arrangement: pair          # 2 sensors (opposed)
-    n_bmm350: 2
+    arrangement: single        # 1 sensor (board: U29 only)
+    n_bmm350: 1
     dynamics: false
   - finger: palm
     center_mm: [0.0, 30.0, 6.0]

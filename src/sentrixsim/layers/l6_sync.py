@@ -10,8 +10,11 @@ Outputs: aligned dict + bmm_valid / temp_valid masks + t_master_us.
 
 Assumptions
 -----------
-* Skew budgets are TARGETS (DERIV Phase 07), not measured residuals; intra-array
-  skew is modelled as a small fixed per-sensor offset within the timestamp.
+* Mark 2 transport is PIO-bit-banged I2C Fast+ (1 MHz) with lock-step PIO start +
+  BMM350 forced-mode + a hardware strobe (architecture_freeze 3.4) -- NOT I3C
+  broadcast. Skew budgets are TARGETS for that lock-step start spread, not
+  measured residuals; intra-array skew is modelled as a small fixed per-sensor
+  offset within the timestamp.
 * Hub clock is ideal (alpha=1, beta=0) in v1.
 
 Limitations
@@ -21,8 +24,8 @@ Limitations
 
 Hardware-upgrade path
 ---------------------
-* Replace target skews with measured genlock latency-probe residuals (DERIV R2);
-  fit the affine clock model alpha,beta from PTP/event logs.
+* Replace target skews with measured genlock latency-probe residuals (Phase 4
+  Y1-Y6); fit the affine clock model alpha,beta from PTP/event logs.
 """
 from __future__ import annotations
 

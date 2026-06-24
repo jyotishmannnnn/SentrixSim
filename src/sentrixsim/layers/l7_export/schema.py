@@ -14,7 +14,6 @@ import numpy as np
 # B_xx_<axis> per BMM index is expanded at write time from B_read_uT[T,21,3].
 TACTILE_AXES = ["bx", "by", "bz"]
 ACCEL_AXES = ["ax", "ay", "az"]
-TRIPOD = ["thumb", "index", "middle"]
 
 UNITS = {
     "t_master_us": "us",
@@ -39,23 +38,10 @@ def temp_columns(lis_ids: list[str]) -> list[str]:
     return [f"dyn.{sid}.temp_c" for sid in lis_ids]
 
 
-# ---- legacy Layout-B column names (compatibility shim; --legacy-columns) ----
-def flat_tactile_columns(n_bmm: int) -> list[str]:
-    cols = []
-    for i in range(n_bmm):
-        for ax in TACTILE_AXES:
-            cols.append(f"tactile.b{i:02d}.{ax}_uT")
-    return cols
-
-
-def flat_accel_columns(fingers: list[str] | None = None) -> list[str]:
-    cols = []
-    for f in (fingers or TRIPOD):
-        for ax in ACCEL_AXES:
-            cols.append(f"dyn.{f}.{ax}_g")
-    return cols
-
-
+# NOTE: the legacy Layout-B column shim (flat tactile.bNN / dyn.<finger>) was
+# retired in SIM-3. SentrixSim emits ONLY the canonical sensor_id-keyed columns
+# above. DataEngine still reads pre-migration legacy artifacts via its own
+# resolver fallback; SentrixSim no longer produces them.
 def project_ruv(B_read_uT: np.ndarray, n_bmm: int) -> np.ndarray:
     """Explicit, documented projection of sparse clusters to a [T, 1, n_bmm]
     pseudo-image (U=1, V=n_bmm). This is a labelling convenience for the Data

@@ -17,11 +17,10 @@ import pyarrow as pa
 import pyarrow.parquet as pq
 
 from ...core_types import Episode
-from .schema import (TACTILE_AXES, accel_columns, flat_accel_columns,
-                     flat_tactile_columns, tactile_columns, temp_columns)
+from .schema import accel_columns, tactile_columns, temp_columns
 
 
-def write(ep: Episode, out_dir: str | Path, legacy_columns: bool = False) -> Path:
+def write(ep: Episode, out_dir: str | Path) -> Path:
     out_dir = Path(out_dir)
     out_dir.mkdir(parents=True, exist_ok=True)
     n = ep.n_samples
@@ -30,29 +29,21 @@ def write(ep: Episode, out_dir: str | Path, legacy_columns: bool = False) -> Pat
     B = ep.aligned["B_read_uT"]                 # (T, nb, 3)
     A = ep.aligned["accel_read_g"]              # (T, nl, 3)
     temp = ep.aligned["temp_read_c"]            # (T, nl)
-    nb, nl = B.shape[1], A.shape[1]
 
-    # Sensor ids come from the topology descriptor (carried in meta). Count-agnostic.
+    # Canonical sensor_id-keyed columns ONLY (SIM-3 retired the legacy shim).
+    # Sensor ids come from the topology descriptor (carried in meta); count-agnostic.
     bmm_ids = ep.meta.get("bmm_sensor_ids")
     lis_ids = ep.meta.get("lis_sensor_ids")
-
-    if legacy_columns or bmm_ids is None or lis_ids is None:
-        # Layout-B compatibility shim (ordinal tactile.bNN + dyn.<finger>).
-        fingers = [s.replace("lis_", "") for s in lis_ids] if lis_ids else None
-        for i, name in enumerate(flat_tactile_columns(nb)):
-            cols[name] = B[:, i // 3, i % 3]
-        for j, name in enumerate(flat_accel_columns(fingers)):
-            cols[name] = A[:, j // 3, j % 3]
-        for k, f in enumerate(fingers or ["thumb", "index", "middle"]):
-            cols[f"dyn.{f}.temp_degC"] = temp[:, k]
-    else:
-        # Canonical sensor_id-keyed columns.
-        for i, name in enumerate(tactile_columns(bmm_ids)):
-            cols[name] = B[:, i // 3, i % 3]
-        for j, name in enumerate(accel_columns(lis_ids)):
-            cols[name] = A[:, j // 3, j % 3]
-        for k, name in enumerate(temp_columns(lis_ids)):
-            cols[name] = temp[:, k]
+    if bmm_ids is None or lis_ids is None:
+        raise ValueError(
+            "episode meta is missing bmm_sensor_ids / lis_sensor_ids; cannot emit "
+            "canonical columns (descriptor-driven export requires them)")
+    for i, name in enumerate(tactile_columns(bmm_ids)):
+        cols[name] = B[:, i // 3, i % 3]
+    for j, name in enumerate(accel_columns(lis_ids)):
+        cols[name] = A[:, j // 3, j % 3]
+    for k, name in enumerate(temp_columns(lis_ids)):
+        cols[name] = temp[:, k]
 
     cols["bmm_valid"] = ep.aligned["bmm_valid"]
     cols["temp_valid"] = ep.aligned["temp_valid"]

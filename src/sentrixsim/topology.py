@@ -9,20 +9,27 @@ Assumptions
 * Cluster centres are nominal placeholders (geo.sensor_coords is UNKNOWN).
 * Within-cluster arrangements:
     quad     -> plus pattern (N/E/S/W) at +/-pitch/2
+    quincunx -> quad plus a centre sensor (5 sensors; index finger, Rev-B)
     triangle -> equilateral, circumradius = pitch/sqrt(3)
     pair     -> opposed along x at +/-pitch/2
+    single   -> 1 sensor at the cluster centre (pinky, Rev-B)
     coarse_grid (palm) -> 4 corners of a square of side = 3*pitch
-* Each sensor's package frame is aligned with the hand frame (no per-sensor
-  mounting rotation modelled in v1).
+* Each sensor carries an explicit local_frame (sensor->device 3x3 rotation).
+  The frozen Rev-B Mark 2 is a FLAT rigid validation board, so every mounting
+  rotation is the IDENTITY -- this is hardware-correct, not a placeholder. The
+  field is carried (not assumed) so a curved Mark 3 tip can set non-identity
+  frames with no code change (consumed in l3_bmm350).
 
 Limitations
 -----------
-* Real per-sensor coordinates and mounting rotations are unknown.
+* Real per-sensor coordinates are unknown (placeholder centres + offsets).
+  Orientation is identity by hardware design for the flat Mark 2 board.
 
 Hardware-upgrade path
 ---------------------
 * Replace cluster centres + offsets with CT / optical metrology of a first
-  article; populate geo.sensor_coords and set its tier to KNOWN.
+  article; populate geo.sensor_coords and set its tier to KNOWN. For Mark 3
+  curved tips, populate per-sensor local_frame from the same metrology.
 """
 from __future__ import annotations
 
@@ -43,6 +50,8 @@ class SensorSite:
     role: str          # cluster arrangement label
     position_mm: np.ndarray  # (3,) hand frame
     sensor_id: str     # e.g. "bmm_index_2" / "lis_index"
+    local_frame: np.ndarray = field(default_factory=lambda: np.eye(3))
+    # sensor->device 3x3 rotation; identity for the flat Mark 2 board.
 
 
 @dataclass
@@ -66,12 +75,28 @@ class Topology:
     def n_lis(self) -> int:
         return len(self.lis_sites)
 
+    @property
+    def bmm_local_frames(self) -> np.ndarray:
+        """(n_bmm, 3, 3) stack of sensor->device rotations, BMM stream order.
+
+        Identity for the flat Mark 2 validation board (a no-op rotation in
+        l3_bmm350); a curved Mark 3 descriptor sets these without code change.
+        """
+        if not self.bmm_sites:
+            return np.zeros((0, 3, 3))
+        return np.stack([np.asarray(s.local_frame, float) for s in self.bmm_sites])
+
 
 def _cluster_offsets(arrangement: str, pitch: float) -> np.ndarray:
     """Return (n,3) in-plane (x,y) offsets for a cluster arrangement (z=0)."""
     h = pitch / 2.0
     if arrangement == "quad":
         return np.array([[0, h, 0], [h, 0, 0], [0, -h, 0], [-h, 0, 0]], float)
+    if arrangement == "quincunx":      # quad (plus) + centre -> 5 sensors
+        return np.array([[0, h, 0], [h, 0, 0], [0, -h, 0], [-h, 0, 0],
+                         [0, 0, 0]], float)
+    if arrangement == "single":        # 1 sensor at the cluster centre
+        return np.zeros((1, 3), float)
     if arrangement == "triangle":
         r = pitch / np.sqrt(3.0)
         ang = np.deg2rad([90.0, 210.0, 330.0])
@@ -93,10 +118,14 @@ def from_descriptor(desc) -> Topology:
     the descriptor is generated from build_topology), so a faithful descriptor
     reproduces byte-identical streams.
     """
-    kind_of = {"BMM350": "bmm350", "LIS2DW12": "lis2dtw12"}
+    # Accept both the (correct) LIS2DTW12 part name and the legacy LIS2DW12
+    # spelling so descriptor MPN corrections never KeyError the simulator (M1).
+    kind_of = {"BMM350": "bmm350", "LIS2DTW12": "lis2dtw12", "LIS2DW12": "lis2dtw12"}
     topo = Topology(name=desc.descriptor_version)
     for sid, s in enumerate(desc.sensors.values()):
         pos_m = s.position_m if s.position_m is not None else (0.0, 0.0, 0.0)
+        lf = (np.asarray(s.local_frame, float) if s.local_frame is not None
+              else np.eye(3))
         topo.sites.append(
             SensorSite(
                 sid=sid,
@@ -106,6 +135,7 @@ def from_descriptor(desc) -> Topology:
                       if s.cluster_id in desc.clusters else s.modality),
                 position_mm=np.asarray(pos_m, float) * 1000.0,
                 sensor_id=s.sensor_id,
+                local_frame=lf,
             )
         )
     return topo

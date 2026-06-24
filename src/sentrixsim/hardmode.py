@@ -220,7 +220,8 @@ def build_hard_episode(event_name, config_dir, *, noise_seed, drift_seed,
     B_true = B_true + field_bias[:, None, :]
     noise = NoiseModel(noise_seed, drift_seed=drift_seed)
     drop_mask = _dropout_mask(np.random.default_rng(dropout_seed), n, topo.n_bmm, hm)
-    bmm_out = l3_bmm350.run(B_true, reg, noise, session_cal=session_cal, dropout_mask=drop_mask)
+    bmm_out = l3_bmm350.run(B_true, reg, noise, session_cal=session_cal,
+                            dropout_mask=drop_mask, local_frames=topo.bmm_local_frames)
     lis_out = l4_lis2dtw12.run(gt.accel_true_g, gt.temp_true_c, reg, noise, scene)
     jitter = _jitter(np.random.default_rng(noise_seed + 7), n, hm)
     aligned = l6_sync.run(n, bmm_out, lis_out, reg, jitter_us=jitter)

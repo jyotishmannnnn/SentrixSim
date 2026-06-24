@@ -6,3 +6,8 @@ build/
 dist/
 out/
 .pytest_cache/
+SentrixDataset_v0.3_FINAL/
+*.zip
+__pycache__/
+*.pyc
+.pytest_cache/

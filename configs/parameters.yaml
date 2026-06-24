@@ -347,9 +347,9 @@ sync.field_rate_hz:
 sync.intra_array_skew_us:
   value: 50.0
   units: us
-  tier: KNOWN
-  confidence: 0.8
-  origin: "DERIV Phase 07 (I3C broadcast intra-array skew target <50 us)"
+  tier: ESTIMATED
+  confidence: 0.6
+  origin: "Mark 2 transport is PIO-bit-banged I2C Fast+ (1 MHz) with lock-step PIO start + BMM350 forced-mode + hardware strobe (architecture_freeze sec 3.4, revb SEC D), NOT I3C broadcast. 50 us is a target budget for the lock-step start spread, not a measured residual; not consumed numerically in v1 (l6_sync models skew as a fixed per-sensor offset within the timestamp). Replace with measured genlock latency-probe residuals (Phase 4 Y1-Y6)."
   enabled: true
 sync.timestamp_res_us:
   value: 1.0

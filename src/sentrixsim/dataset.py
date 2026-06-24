@@ -148,11 +148,17 @@ def build_dataset(config_dir, out_root, version="0.1", events=EVENTS,
     val = {"missing_channels": [], "nan_episodes": [], "sync_failures": [],
            "export_failures": [], "n_checked": 0}
 
+    # Canonical sensor_id-keyed columns, derived from the topology descriptor
+    # (SIM-3 retired the legacy tactile.bNN / dyn.<finger> shim). Count-agnostic.
+    from sentrix_contracts import bundled_descriptor_path, load_descriptor
+
+    from .layers.l7_export.schema import accel_columns, tactile_columns, temp_columns
+    _desc = load_descriptor(bundled_descriptor_path("Mark2_v1"))
+    _bmm = [s.sensor_id for s in _desc.sensors.values() if s.modality == "magnetic"]
+    _lis = [s.sensor_id for s in _desc.sensors.values() if s.modality == "dynamics"]
     expected_sensor_cols = (
         {"t_master_us", "bmm_valid", "temp_valid", "sat_any", "phase_id"}
-        | {f"tactile.b{i:02d}.{ax}_uT" for i in range(21) for ax in ("bx", "by", "bz")}
-        | {f"dyn.{f}.{ax}_g" for f in ("thumb", "index", "middle") for ax in ("ax", "ay", "az")}
-        | {f"dyn.{f}.temp_degC" for f in ("thumb", "index", "middle")}
+        | set(tactile_columns(_bmm)) | set(accel_columns(_lis)) | set(temp_columns(_lis))
     )
 
     n_hardneg_done = 0
